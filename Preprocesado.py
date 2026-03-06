@@ -9,7 +9,11 @@ import pandas as pd
 ## - group choice : first, last, count
 import pandas as pd
 
-import pandas as pd
+
+JSON_entrada = {
+    'columnas': ['int', 'int', 'double', 'string', 'text']
+
+}
 
 
 def filling_function():
@@ -22,8 +26,6 @@ def filling_function():
                 valor_actual = df[column][i]
                 if pd.isna(valor_actual): #valor vacio
                     df.loc[i, column] = moda
-
-
     df.to_csv('datos_procesados.csv', index=False)
 
 
