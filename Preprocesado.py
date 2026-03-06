@@ -7,14 +7,31 @@ import pandas as pd
 ## On non-NA values in the group
 ## - numeric choice : mean, median, sum, std, var, min, max, prod
 ## - group choice : first, last, count
-def filling_function(v):
+import pandas as pd
+
+import pandas as pd
 
 
-    return v.fillna(v.mean())#seleccionar la funci�n de imputacion
+def filling_function():
+    df = pd.read_csv('datos.csv')
+    for column in df.columns:
+        if not df[column].mode().empty:
+            moda = df[column].mode()[0]  # Conseguir la moda
+            #print(f"La moda de {column} es: {moda}")
+            for i in range(len(df[column])):
+                valor_actual = df[column][i]
+                if pd.isna(valor_actual): #valor vacio
+                    df.loc[i, column] = moda
+
+
+    df.to_csv('datos_procesados.csv', index=False)
 
 
 
 
+
+
+'''
 # Compute recipe outputs from inputs
 # TODO: Replace this part by your actual code that computes the output, as a Pandas dataframe
 # NB: DSS also supports other kinds of APIs for reading and writing data. Please see doc.
@@ -167,3 +184,6 @@ NombreDatasetOutput_df= cat2num(NombreDatasetOutput_df)
 # Write recipe outputs
 NombreDatasetOutput = dataiku.Dataset("NombreDatasetOutput")
 NombreDatasetOutput.write_with_schema(NombreDatasetOutput_df)
+'''
+if __name__ == "__main__":
+    filling_function()

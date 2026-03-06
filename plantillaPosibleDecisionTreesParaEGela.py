@@ -571,3 +571,5 @@ if __name__ == "__main__":
     else:
         print(Fore.RED+"Modo no soportado"+Fore.RESET)
         sys.exit(1)
+
+if __name__ == "__main__":
