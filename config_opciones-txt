@@ -53,6 +53,7 @@
         //"normalize_strategy"
         // Opciones:
         //   - "basic": Quita las palabras no significativas y se queda con las palabras raiz.
+        //   - "none": No hacer nada.
 
         // "encoding": Estrategia para pasar de texto a numeros
         // Opciones:

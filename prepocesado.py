@@ -128,52 +128,68 @@ def limpiar_texto(df, config):
     return df
 
 
-#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   VAS AQUI
 def normalizar_texto(df, config):
+    estrategia = config.get("normalize_strategy")
+    if estrategia == "none":
+        return df
 
-    if config.get("normalize_strategy") == "basic":
-        stop_words = set(stopwords.words('english'))
-        stemmer = SnowballStemmer('english')
-        cols_texto = df.select_dtypes(include=['string']).columns
+    if estrategia == "basic":
+        stop_words = set(stopwords.words('english')) # Una lista con todas las palabras basura (the, a, is, in, at, ...)
+        stemmer = SnowballStemmer('english') # Algoritmo que convierte las palabras en su raiz
+        cols_texto = df.select_dtypes(include=['string']).columns # Obtener las columnas que hemos definido como string (texto)
 
         for col in cols_texto:
             def procesar_celda(texto):
-                if pd.isna(texto): return texto
-                texto = re.sub(r'[^\w\s]', '', str(texto))
-                palabras = texto.split()
-                palabras_limpias = [stemmer.stem(p) for p in palabras if p not in stop_words]
-                return " ".join(palabras_limpias)
+                if pd.isna(texto): return texto # Vacia
+
+                texto = re.sub(r'[^\w\s]', '', str(texto)) # Quita todos los signos de puntuación
+                    # \w: cualquier letra
+                    # \s: espacio en blanco
+                    # ^: inversa
+                    # re.sub(): sustituye lo que le digas(los signos de puntuación por vacios) en un texto.
+
+                palabras = texto.split() #Separa por palabras
+
+                palabras_limpias = [stemmer.stem(p) for p in palabras if p not in stop_words] # Quita las basura y pone la raiz de las otras
+
+                return " ".join(palabras_limpias) #devolvemos la frase con espacio entre las palabras
 
             df[col] = df[col].apply(procesar_celda)
+
     return df
 
 
 # ==========================================
-# 7. FUNCIÓN PARA VECTORIZAR TEXTO (Bag of Words / TF-IDF)
+# 7. FUNCIÓN PARA VECTORIZAR TEXTO
 # ==========================================
 def vectorizar_texto(df, config):
-    estrategia = config.get("text_encoding", "none")
+    estrategia = config.get("text_encoding")
     if estrategia == "none": return df
 
     cols_texto = df.select_dtypes(include=['string']).columns
     for col in cols_texto:
-        if estrategia == "binary":
+
+        #METODOS DE sklearn
+        if estrategia == "one-hot":
             vec = CountVectorizer(binary=True)
         elif estrategia == "frequency":
             vec = CountVectorizer()
         elif estrategia == "tf-idf":
             vec = TfidfVectorizer()
 
-        textos = df[col].fillna('')
-        matriz = vec.fit_transform(textos)
+        textos = df[col].fillna('')  # Rellena huecos vacios que pueden haber quedado
+        matriz = vec.fit_transform(textos)  # ejecuta la estrategia de vectorización
+            # Crea un diccionario con todas las palabras de los datos y da los valores a cada fila
 
-        # Generar columnas nuevas con los prefijos
-        nombres_cols = [f"{col}_{palabra}" for palabra in vec.get_feature_names_out()]
-        df_vec = pd.DataFrame(matriz.toarray(), columns=nombres_cols, index=df.index)
 
-        # Unir y eliminar la columna de texto original
-        df = pd.concat([df, df_vec], axis=1)
-        df = df.drop(col, axis=1)
+        nombres_cols = [f"{col}_{palabra}" for palabra in vec.get_feature_names_out()] # Darle nombres a las columnas (comentario_yo, comentario_comer, comentario_hacer, ...)
+        df_vec = pd.DataFrame(matriz.toarray(), columns=nombres_cols, index=df.index) # juntar los nombres con los datos vectorizados
+            # matriz.toarray(): los datos vectorizados
+            # columns=nombres_cols: los nombres que acabamos de crear
+            # index=df.index: el index (los id) de las filas. Pandas le da un valor numerico a cada fila (un id), como igual hemos borrado filas le decimos que siga ese indice
+
+        df = pd.concat([df, df_vec], axis=1) # Unir todas las columnas
+        df = df.drop(col, axis=1) # Borrar la columna de texto
 
     return df
 
@@ -188,34 +204,38 @@ def pipeline_preprocesamiento(df_path, json_path):
 
     print(f"--- Iniciando preprocesado ({len(df)} filas originales) ---")
 
-    # Ejecución ordenada del pipeline
     df = asignar_tipos(df, config.get("categoria", []))
+
+    # TRATAMIENTO DE DATOS
     df = tratar_nulos(df, config)
+    #df.to_csv('1_nulos_tratados.csv', index=False)
+
     df = tratar_outliers(df, config)
+    #df.to_csv('2_outliers_tratados.csv', index=False)
+
     df = escalar_datos(df, config)
+    #df.to_csv('3_datos_escalados.csv', index=False)
 
-    # Procesa categóricas
+    # PROCESAMIENTO DE CATEGORÍAS
     df = codificar_categoricas(df, config)
+    #df.to_csv('4_categoricas_codificadas.csv', index=False)
 
-    # Procesa texto libre
+    # PROCESAMIENTO DE TEXTO
     df = limpiar_texto(df, config)
-    df = normalizar_texto(df, config)
-    df = vectorizar_texto(df, config)
+    #df.to_csv('5_texto_limpio.csv', index=False)
 
-    print(f"--- Finalizado. DataFrame resultante: {df.shape[0]} filas, {df.shape[1]} columnas ---")
+    df = normalizar_texto(df, config)
+    #df.to_csv('6_texto_normalizado.csv', index=False)
+
+    df = vectorizar_texto(df, config)
+    #df.to_csv('7_texto_vectorizado_final.csv', index=False)
+
+    print(f"\n--- Finalizado. DataFrame resultante: {df.shape[0]} filas, {df.shape[1]} columnas ---")
     return df
 
 
-# ==========================================
-# EJECUCIÓN
-# ==========================================
 if __name__ == "__main__":
-    # Asegúrate de tener datos.csv y config.json en la misma carpeta
     df_procesado = pipeline_preprocesamiento('datos.csv', 'config.json')
 
-    print("\nPrimeras filas del DataFrame procesado:")
-    print(df_procesado.head())
-
-    # Guardamos el resultado final
     df_procesado.to_csv('datos_listos_para_modelo.csv', index=False)
     print("\n¡Archivo 'datos_listos_para_modelo.csv' guardado con éxito!")

@@ -1,51 +1,51 @@
 ID,Edad,Ingresos,Categoria,Comentario
-1,25,30000,Tecnologia,El celular es rapido y la bateria dura mucho
-2,,45000,Hogar,Buen producto pero llego roto
-3,35,,Tecnologia,Excelente celular me encanta
-4,42,60000,,No recomiendo este producto pesimo servicio
-5,28,32000,Ropa,Muy bonito pero la talla es pequeña
-6,,,Hogar,El producto funciona bien
-7,50,75000,Tecnologia,Rapido y eficiente excelente compra
+1,25,30000,Technology,The cell phone is fast and the battery lasts a long time.
+2,,45000,Home,Good product but it arrived broken.
+3,35,,Technology,Excellent cell phone I love it
+4,42,60000,,I do not recommend this product terrible service
+5,28,32000,Clothing,Very pretty but the size is small
+6,,,Home,The product works well
+7,50,75000,Technology,Fast and efficient excellent purchase
 8,35,40000,,
-9,22,28000,Ropa,La tela es de mala calidad
-10,45,,Hogar,Muy util para la cocina
-11,,55000,Tecnologia,No encendia y tuve que devolverlo
-12,31,38000,,El envio fue rapidisimo
-13,29,42000,Ropa,Me quedo perfecto excelente talla
-14,,,Tecnologia,Funciona perfecto pero es muy caro
+9,22,28000,Clothing,The fabric is of poor quality
+10,45,,Home,Very useful for the kitchen
+11,,55000,Technology,It didn't turn on and I had to return it
+12,31,38000,,The shipping was very fast
+13,29,42000,Clothing,It fit me perfectly excellent size
+14,,,Technology,Works perfectly but is very expensive
 15,55,80000,,
-16,38,48000,Hogar,Se rompio al primer uso pesima calidad
-17,26,31000,Ropa,Llego el color equivocado
-18,41,,Tecnologia,La pantalla es increible muy buen celular
-19,33,50000,Hogar,Facil de armar y muy practico
-20,,29000,,Buen celular pero camara regular
-21,48,62000,Deporte,Las zapatillas son muy comodas para correr
-22,19,,Tecnologia,La bateria no dura nada decepcion total
-23,36,45000,Hogar,
-24,,58000,Ropa,Abriga mucho y el diseño es moderno
-25,27,34000,,El pedido tardo un mes en llegar inaceptable
-26,52,,Hogar,Cumple su funcion sin mas
-27,30,41000,Deporte,Material resistente y buen agarre
-28,24,29000,Tecnologia,Se calienta demasiado al jugar
-29,,,Ropa,Me enviaron una talla que no pedi
-30,40,70000,Hogar,Excelente relacion calidad precio
-31,34,53000,Tecnologia,El teclado es incomodo pero el raton esta bien
+16,38,48000,Home,It broke on the first use terrible quality
+17,26,31000,Clothing,The wrong color arrived
+18,41,,Technology,The screen is incredible very good cell phone
+19,33,50000,Home,Easy to assemble and very practical
+20,,29000,,Good cell phone but average camera
+21,48,62000,Sports,The sneakers are very comfortable for running
+22,19,,Technology,The battery doesn't last at all total disappointment
+23,36,45000,Home,
+24,,58000,Clothing,Very warm and the design is modern
+25,27,34000,,The order took a month to arrive unacceptable
+26,52,,Home,Does its job nothing more
+27,30,41000,Sports,Resistant material and good grip
+28,24,29000,Technology,Gets too hot when playing
+29,,,Clothing,They sent me a size I didn't order
+30,40,70000,Home,Excellent value for money
+31,34,53000,Technology,The keyboard is uncomfortable but the mouse is fine
 32,,38000,,
-33,28,,Ropa,Se encogio en el primer lavado
-34,45,61000,Deporte,Perfecto para entrenar en casa
-35,50,72000,Hogar,No calienta lo suficiente
-36,21,25000,Tecnologia,Me encanta el color y el diseño
-37,,,Ropa,Costuras mal hechas muy mala calidad
-38,39,49000,,Servicio al cliente nefasto no contestan
-39,32,,Deporte,La cuerda es muy corta
-40,47,65000,Tecnologia,Actualizacion lenta pero en general bien
-41,26,33000,Hogar,Ocupa mucho espacio en la cocina
-42,29,40000,Ropa,Tela suave y muy comoda
-43,,55000,Deporte,Vino con una pieza faltante
-44,37,,Tecnologia,La calidad de imagen es espectacular
-45,53,78000,Hogar,Silencioso y potente lo recomiendo
-46,23,27000,Juguetes,No vale lo que cuesta muy caro
-47,,,Ropa,El estampado se borro rapido
-48,35,46000,Deporte,Muy buen producto para el precio
-49,42,63000,Tecnologia,Fallo a los dos dias de uso
-50,31,44000,Hogar,
+33,28,,Clothing,It shrank in the first wash
+34,45,61000,Sports,Perfect for training at home
+35,50,72000,Home,It doesn't heat up enough
+36,21,25000,Technology,I love the color and the design
+37,,,Clothing,Badly made seams very poor quality
+38,39,49000,,Terrible customer service they don't answer
+39,32,,Sports,The rope is very short
+40,47,65000,Technology,Slow update but overall good
+41,26,33000,Home,Takes up a lot of space in the kitchen
+42,29,40000,Clothing,Soft and very comfortable fabric
+43,,55000,Sports,Came with a missing piece
+44,37,,Technology,The image quality is spectacular
+45,53,78000,Home,Quiet and powerful I recommend it
+46,23,27000,Toys,Not worth what it costs very expensive
+47,,,Clothing,The print faded quickly
+48,35,46000,Sports,Very good product for the price
+49,42,63000,Technology,Failed after two days of use
+50,31,44000,Home,

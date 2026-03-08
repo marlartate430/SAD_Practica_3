@@ -1,7 +1,7 @@
 
 {
     "preproceso": {
-        "categoria": ["int", "double", "string", "text", "string"],
+        "categoria": ["string", "double", "double", "string", "text"],
         "missing_values": "impute",
         "impute_strategy": "mode",
         "outliers": "impute",
@@ -10,6 +10,6 @@
         "categorical_encoding": "label",
         "text_process": "basic_clean",
         "normalize_strategy": "basic",
-        "encoding": "TF-IDF"
+        "text_encoding": "frequency"
     }
 }
