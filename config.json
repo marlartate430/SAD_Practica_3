@@ -1,4 +1,15 @@
-{
-    "columnas": ["int", "int", "double", "string", "text"]
 
+{
+    "preproceso": {
+        "categoria": ["int", "double", "string", "text", "string"],
+        "missing_values": "impute",
+        "impute_strategy": "mode",
+        "outliers": "impute",
+        "outlier_strategy": "max-min",
+        "scaling": "z-score",
+        "categorical_encoding": "label",
+        "text_process": "basic_clean",
+        "normalize_strategy": "basic",
+        "encoding": "TF-IDF"
+    }
 }

@@ -1,0 +1,65 @@
+{
+    "preproceso": {
+        // "categoria": Lista con el tipo de dato de cada columna en orden.
+        // Opciones: "int", "double", "string", "text"
+        "categoria": ["int", "double", "string", "text", "string"],
+
+        // "missing_values": Qué hacer con las  vacías
+        // Opciones:
+        //   - "impute": Rellenar los vacíos.
+        //   - "delete": Borrar la fila entera que tenga un vacío.
+        //   - "none": No hacer nada.
+        "missing_values": "impute",
+
+        // "impute_strategy": Si elegiste "impute", ¿con qué rellenar?
+        // Opciones:
+        //   - "mean"
+        //   - "median"
+        //   - "mode"
+        "impute_strategy": "mode",
+
+        // "outliers": Qué hacer con los valores atípicos
+        // Opciones:
+        //   - "impute"
+        //   - "delete"
+        //   - "none"
+        "outliers": "impute",
+
+        // "outlier_strategy": Si elegiste "impute", ¿cómo modificar?
+        // Opciones:
+        //   - "max-min"
+        //   - "mean"
+        //   - "median"
+        "outlier_strategy": "max-min",
+
+        // "scaling": Cómo escalar
+        // Opciones:
+        //   - "z-score": media 0 y desviación estándar 1.
+        //   - "min-max": (valor - min) / (max - min)
+        //   - "none": No hacer nada.
+        "scaling": "z-score",
+
+        //"categorical_encoding": categorizar los string
+        //"categorical_encoding": "one-hot"
+        //   - "label": ir subiendo un numero por categoria.
+        //   - "none": No hacer nada.
+
+        // "text_process": Qué hacer con las columnas de texto.
+        // Opciones:
+        //   - "basic_clean": Pasa a minúsculas y quita espacios en blanco a los lados.
+        //   - "none": No hacer nada.
+        "text_process": "basic_clean"
+
+        //"normalize_strategy"
+        // Opciones:
+        //   - "basic": Quita las palabras no significativas y se queda con las palabras raiz.
+
+        // "encoding": Estrategia para pasar de texto a numeros
+        // Opciones:
+        //   - "one-hot": Crea columnas (1 y 0) si sale la palabra.
+        //   - "Frecuency": Crea columnas de cuantas veces aparece cada palabra.
+        //   - "TF-IDF": Crea columnas con valores dependendiendo cuantas veces sale la palabra y como de común es.
+        //   - "none": No hacer nada.
+        "encoding": "one-hot",
+    }
+}

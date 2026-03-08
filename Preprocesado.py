@@ -8,26 +8,20 @@ import pandas as pd
 ## - numeric choice : mean, median, sum, std, var, min, max, prod
 ## - group choice : first, last, count
 import pandas as pd
+import json
 
-
-JSON_entrada = {
-    'columnas': ['int', 'int', 'double', 'string', 'text']
-
-}
+with open('config.json', 'r') as archivo:
+    config = json.load(archivo)
+    #print(config)
 
 
 def filling_function():
-    df = pd.read_csv('datos.csv')
-    for column in df.columns:
-        if not df[column].mode().empty:
-            moda = df[column].mode()[0]  # Conseguir la moda
-            #print(f"La moda de {column} es: {moda}")
-            for i in range(len(df[column])):
-                valor_actual = df[column][i]
-                if pd.isna(valor_actual): #valor vacio
-                    df.loc[i, column] = moda
-    df.to_csv('datos_procesados.csv', index=False)
 
+    df = pd.read_csv('datos.csv')
+
+    df_limpio = df.apply(filling_function)
+
+    df_limpio.to_csv('datos_prepocesados.csv', index=False)
 
 
 
