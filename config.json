@@ -1,15 +1,22 @@
 
 {
+
     "preproceso": {
-        "categoria": ["string", "double", "double", "string", "text"],
+        "target": "Sentimiento",
+        "categoria": ["id", "double", "double", "string", "text"],
+        "drop_columns": [],
+        "drop_duplicates": true,
         "missing_values": "impute",
-        "impute_strategy": "mode",
+        "impute_strategy": ["none", "mode", "median"],
         "outliers": "impute",
-        "outlier_strategy": "max-min",
-        "scaling": "z-score",
+        "outlier_strategy": ["max-min", "median"],
+        "scaling": ["min-max", "z-score", "z-score"],
         "categorical_encoding": "label",
         "text_process": "basic_clean",
         "normalize_strategy": "basic",
-        "text_encoding": "frequency"
+        "text_encoding": "frequency",
+        "sampling_strategy": "basic",
+        "sampling_ratio": 0.3,
+        "sampling_seed": 42
     }
 }

@@ -1,51 +1,60 @@
-ID,Edad,Ingresos,Categoria,Comentario
-1,25,30000,Technology,The cell phone is fast and the battery lasts a long time.
-2,,45000,Home,Good product but it arrived broken.
-3,35,,Technology,Excellent cell phone I love it
-4,42,60000,,I do not recommend this product terrible service
-5,28,32000,Clothing,Very pretty but the size is small
-6,,,Home,The product works well
-7,50,75000,Technology,Fast and efficient excellent purchase
-8,35,40000,,
-9,22,28000,Clothing,The fabric is of poor quality
-10,45,,Home,Very useful for the kitchen
-11,,55000,Technology,It didn't turn on and I had to return it
-12,31,38000,,The shipping was very fast
-13,29,42000,Clothing,It fit me perfectly excellent size
-14,,,Technology,Works perfectly but is very expensive
-15,55,80000,,
-16,38,48000,Home,It broke on the first use terrible quality
-17,26,31000,Clothing,The wrong color arrived
-18,41,,Technology,The screen is incredible very good cell phone
-19,33,50000,Home,Easy to assemble and very practical
-20,,29000,,Good cell phone but average camera
-21,48,62000,Sports,The sneakers are very comfortable for running
-22,19,,Technology,The battery doesn't last at all total disappointment
-23,36,45000,Home,
-24,,58000,Clothing,Very warm and the design is modern
-25,27,34000,,The order took a month to arrive unacceptable
-26,52,,Home,Does its job nothing more
-27,30,41000,Sports,Resistant material and good grip
-28,24,29000,Technology,Gets too hot when playing
-29,,,Clothing,They sent me a size I didn't order
-30,40,70000,Home,Excellent value for money
-31,34,53000,Technology,The keyboard is uncomfortable but the mouse is fine
-32,,38000,,
-33,28,,Clothing,It shrank in the first wash
-34,45,61000,Sports,Perfect for training at home
-35,50,72000,Home,It doesn't heat up enough
-36,21,25000,Technology,I love the color and the design
-37,,,Clothing,Badly made seams very poor quality
-38,39,49000,,Terrible customer service they don't answer
-39,32,,Sports,The rope is very short
-40,47,65000,Technology,Slow update but overall good
-41,26,33000,Home,Takes up a lot of space in the kitchen
-42,29,40000,Clothing,Soft and very comfortable fabric
-43,,55000,Sports,Came with a missing piece
-44,37,,Technology,The image quality is spectacular
-45,53,78000,Home,Quiet and powerful I recommend it
-46,23,27000,Toys,Not worth what it costs very expensive
-47,,,Clothing,The print faded quickly
-48,35,46000,Sports,Very good product for the price
-49,42,63000,Technology,Failed after two days of use
-50,31,44000,Home,
+ID,Edad,Ingresos,Categoria,Comentario,Sentimiento
+1,25,30000,Technology,The cell phone is fast and the battery lasts a long time.,Positivo
+2,,45000,Home,Good product but it arrived broken.,Negativo
+3,35,,Technology,Excellent cell phone I love it,Positivo
+4,42,60000,,I do not recommend this product terrible service,Negativo
+5,28,32000,Clothing,Very pretty but the size is small,Negativo
+6,,,Home,The product works well,Positivo
+7,50,75000,Technology,Fast and efficient excellent purchase,Positivo
+8,35,40000,,,Neutral
+9,22,28000,Clothing,The fabric is of poor quality,Negativo
+10,45,,Home,Very useful for the kitchen,Positivo
+11,130,30000,Technology,It is okay I guess.,Neutral
+12,,55000,Technology,It didn't turn on and I had to return it,Negativo
+13,31,38000,,The shipping was very fast,Positivo
+14,29,42000,Clothing,It fit me perfectly excellent size,Positivo
+15,,,Technology,Works perfectly but is very expensive,Neutral
+16,55,80000,,,Neutral
+17,38,48000,Home,It broke on the first use terrible quality,Negativo
+18,26,31000,Clothing,The wrong color arrived,Negativo
+19,41,,Technology,The screen is incredible very good cell phone,Positivo
+20,33,50000,Home,Easy to assemble and very practical,Positivo
+21,25,8500000,Clothing,I bought the whole store.,Positivo
+22,,29000,,Good cell phone but average camera,Neutral
+23,48,62000,Sports,The sneakers are very comfortable for running,Positivo
+24,19,,Technology,The battery doesn't last at all total disappointment,Negativo
+25,36,45000,Home,,Neutral
+26,,58000,Clothing,Very warm and the design is modern,Positivo
+27,27,34000,,The order took a month to arrive unacceptable,Negativo
+28,52,,Home,Does its job nothing more,Neutral
+29,30,41000,Sports,Resistant material and good grip,Positivo
+30,24,29000,Technology,Gets too hot when playing,Negativo
+31,999,99999999,Sports,This ball defies the laws of physics.,Positivo
+32,,,Clothing,They sent me a size I didn't order,Negativo
+33,40,70000,Home,Excellent value for money,Positivo
+34,34,53000,Technology,The keyboard is uncomfortable but the mouse is fine,Neutral
+35,,38000,,,Neutral
+36,28,,Clothing,It shrank in the first wash,Negativo
+37,45,61000,Sports,Perfect for training at home,Positivo
+38,50,72000,Home,It doesn't heat up enough,Negativo
+39,21,25000,Technology,I love the color and the design,Positivo
+40,,,Clothing,Badly made seams very poor quality,Negativo
+41,39,49000,,Terrible customer service they don't answer,Negativo
+42,-15,40000,Home,My dog loves it.,Positivo
+43,32,,Sports,The rope is very short,Negativo
+14,29,42000,Clothing,It fit me perfectly excellent size,Positivo
+44,47,65000,Technology,Slow update but overall good,Neutral
+45,26,33000,Home,Takes up a lot of space in the kitchen,Negativo
+46,29,40000,Clothing,Soft and very comfortable fabric,Positivo
+47,,55000,Sports,Came with a missing piece,Negativo
+48,37,,Technology,The image quality is spectacular,Positivo
+49,53,78000,Home,Quiet and powerful I recommend it,Positivo
+50,23,27000,Toys,Not worth what it costs very expensive,Negativo
+51,45,-500000,Clothing,They charged me a million dollars.,Negativo
+52,,,Clothing,The print faded quickly,Negativo
+53,35,46000,Sports,Very good product for the price,Positivo
+54,42,63000,Technology,Failed after two days of use,Negativo
+55,31,44000,Home,,Neutral
+50,23,27000,Toys,Not worth what it costs very expensive,Negativo
+35,,38000,,,Neutral
+

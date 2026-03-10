@@ -1,8 +1,20 @@
 {
+
+
     "preproceso": {
+
+        // "target": La columna a predecir
+        "target": "sentimiento",
+
         // "categoria": Lista con el tipo de dato de cada columna en orden.
         // Opciones: "int", "double", "string", "text"
         "categoria": ["int", "double", "string", "text", "string"],
+
+
+
+
+        // "drop_duplicates": borrae duplicados o no
+        "drop_duplicates": true,
 
         // "missing_values": Qué hacer con las  vacías
         // Opciones:
@@ -11,12 +23,15 @@
         //   - "none": No hacer nada.
         "missing_values": "impute",
 
-        // "impute_strategy": Si elegiste "impute", ¿con qué rellenar?
+        // "impute_strategy": Si elegiste "impute", ¿con qué rellenar en cada columna numerica?
         // Opciones:
         //   - "mean"
         //   - "median"
         //   - "mode"
-        "impute_strategy": "mode",
+        //   - "min"
+        //   - "max"
+        //   - "none"
+        "impute_strategy": ["none", "mode", "median"],
 
         // "outliers": Qué hacer con los valores atípicos
         // Opciones:
@@ -30,6 +45,7 @@
         //   - "max-min"
         //   - "mean"
         //   - "median"
+        //   - "none"
         "outlier_strategy": "max-min",
 
         // "scaling": Cómo escalar
@@ -42,6 +58,7 @@
         //"categorical_encoding": categorizar los string
         //"categorical_encoding": "one-hot"
         //   - "label": ir subiendo un numero por categoria.
+        //   - "one-hot": crea una nueva columna para cada categoria y pone un uno en las que lo sean
         //   - "none": No hacer nada.
 
         // "text_process": Qué hacer con las columnas de texto.
@@ -62,5 +79,15 @@
         //   - "TF-IDF": Crea columnas con valores dependendiendo cuantas veces sale la palabra y como de común es.
         //   - "none": No hacer nada.
         "encoding": "one-hot",
+
+        // "sampling_strategy": Estrategia para el balanceo de datos
+        //   - "oversampling": Clona las filas de las categorías minoritarias
+        //   - "undersampling": Borra filas de la categoría mayoritaria
+
+        // "sampling_ratio": A que porcentaje debe llegar la clase minoritaria
+        "sampling_ratio": 0.3,
+
+        // "seed": semilla con la que se alearoeiza el balanceo
+        "seed": 42
     }
 }
