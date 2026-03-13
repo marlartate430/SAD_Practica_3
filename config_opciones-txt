@@ -10,9 +10,6 @@
         // Opciones: "int", "double", "string", "text"
         "categoria": ["int", "double", "string", "text", "string"],
 
-
-
-
         // "drop_duplicates": borrae duplicados o no
         "drop_duplicates": true,
 

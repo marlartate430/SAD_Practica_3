@@ -89,7 +89,7 @@ def tratar_nulos(df, config):
         lista_tipos = config.get("categoria")
 
         for col, tipo, estrategia in zip(df.columns, lista_tipos, lista_estrategia):
-            if tipo != "text":
+            if tipo != "text" and tipo != "object" and estrategia != "none":
                 if df[col].isnull().any():
                     if estrategia == "mode" and not df[col].mode().empty:
                         df[col] = df[col].fillna(df[col].mode()[0])
@@ -330,7 +330,6 @@ def pipeline_preprocesamiento(df_path, json_path):
     df = pd.read_csv(df_path)
     with open(json_path, 'r') as f:
         config = json.load(f)["preproceso"]
-
     print(f"--- Iniciando preprocesado ({len(df)} filas originales) ---")
 
     print("\n[1/11] Comprobando duplicados...")
