@@ -1,90 +1,112 @@
 {
-
-
     "preproceso": {
 
-        // "target": La columna a predecir
-        "target": "sentimiento",
+        // "target": La columna a predecir.
+        // Ejemplo: "Sentimiento" (Positivo, Negativo, Neutral).
+        "target": "Sentimiento",
 
-        // "categoria": Lista con el tipo de dato de cada columna en orden.
-        // Opciones: "int", "double", "string", "text"
+        // "categoria": Lista con el tipo de dato de cada columna.
+        // Opciones: "int", "double", "string", "text", "id"
+        // Ejemplo (Edad, Ingresos, Categoria, Comentario, Sentimiento):
         "categoria": ["int", "double", "string", "text", "string"],
 
-        // "drop_duplicates": borrae duplicados o no
+        // "drop_columns": Columnas que se borran.
+        // Ejemplo: ["ID"]
+        "drop_columns": ["ID"],
+
+        // "drop_duplicates": true para borrar filas exactamente iguales.
         "drop_duplicates": true,
 
-        // "missing_values": Qué hacer con las  vacías
-        // Opciones:
-        //   - "impute": Rellenar los vacíos.
-        //   - "delete": Borrar la fila entera que tenga un vacío.
-        //   - "none": No hacer nada.
+        // "erroneous_values": Reglas para tratar valores erroneos.
+        // "action": Qué hacer si se encuentran (Opciones: "impute", "delete", "none").
+        // "rules": Diccionario donde la clave es el nombre de la columna.
+        //   - "conditions": Lista de condiciones. Cada condición tiene un "type":
+        //        * "less_than": Menor que (Ej: Edad < 0).
+        //        * "greater_than": Mayor que (Ej: Edad > 110, Ingresos > 500000).
+        //        * "equals": Igual a un valor exacto.
+        //        * "in_list": Dentro de una lista de valores ["Error", "N/A"].
+        //        * "regex": Expresiones regulares. (Ej: "[^a-zA-Z0-9\\s]" busca caracteres especiales en Categoria).
+        //        * "has_decimals": Identifica como error si el número tiene decimales (Ej: {"type": "has_decimals", "value": true}).
+        //   - "strategy": Con qué rellenar si es erróneo (Opciones: "mean", "median", "mode", "none").
+        "erroneous_values": {
+            "action": "impute",
+            "rules": {
+                "Edad": {
+                    "conditions": [
+                        {"type": "less_than", "value": 0},
+                        {"type": "greater_than", "value": 110}
+                    ],
+                    "strategy": "median"
+                },
+                "Ingresos": {
+                    "conditions": [
+                        {"type": "less_than", "value": 0},
+                        {"type": "greater_than", "value": 500000}
+                    ],
+                    "strategy": "median"
+                },
+                "Categoria": {
+                    "conditions": [
+                        {"type": "regex", "value": "[^a-zA-Z0-9\\s]"}
+                    ],
+                    "strategy": "mode"
+                }
+            }
+        },
+
+        // "missing_values": Qué hacer con las celdas vacías (nulas).
+        // Opciones: "impute" (rellenar), "delete" (borrar fila entera), "none".
         "missing_values": "impute",
 
-        // "impute_strategy": Si elegiste "impute", ¿con qué rellenar en cada columna numerica?
-        // Opciones:
-        //   - "mean"
-        //   - "median"
-        //   - "mode"
-        //   - "min"
-        //   - "max"
-        //   - "none"
-        "impute_strategy": ["none", "mode", "median"],
+        // "impute_strategy": Si elegiste "impute", ¿con qué rellenar cada columna?
+        // Opciones: "mean", "median", "mode", "min", "max", "none"
+        // Ejemplo: mediana para Edad, media para Ingresos, moda para Categoria, nada para Textos/Target.
+        "impute_strategy": ["median", "mean", "mode", "none", "none"],
 
-        // "outliers": Qué hacer con los valores atípicos
-        // Opciones:
-        //   - "impute"
-        //   - "delete"
-        //   - "none"
+        // "outliers": Qué hacer con los valores atípicos (basado en IQR).
+        // Opciones: "impute", "delete", "none".
         "outliers": "impute",
 
-        // "outlier_strategy": Si elegiste "impute", ¿cómo modificar?
+        // "outlier_strategy": Si elegiste "impute", ¿cómo modificar las columnas puramente numéricas?
+        // Opciones: "max-min" (limitar a los bordes), "mean", "median", "none".
+        // Ejemplo: max-min para Edad, mediana para Ingresos.
+        "outlier_strategy": ["max-min", "median"],
+
+        // "scaling": Cómo escalar las columnas puramente numéricas.
+        // Opciones: "z-score" (media 0, std 1), "min-max" (escala de 0 a 1), "none".
+        "scaling": ["min-max", "z-score"],
+
+        // "categorical_encoding": Estrategia para categorizar los "string" que NO son el target.
         // Opciones:
-        //   - "max-min"
-        //   - "mean"
-        //   - "median"
-        //   - "none"
-        "outlier_strategy": "max-min",
+        //   - "label": Asigna 0, 1, 2...
+        //   - "one-hot": Crea columnas booleanas (Ej: Categoria_Home, Categoria_Technology).
+        //   - "none": No hacer nada.
+        "categorical_encoding": "one-hot",
 
-        // "scaling": Cómo escalar
+        // "text_process": Limpieza inicial de columnas "text" (Ej: Comentario).
+        // Opciones: "basic_clean" (Pasa a minúsculas y quita espacios extra), "none".
+        "text_process": "basic_clean",
+
+        // "normalize_strategy": Procesamiento de texto avanzado.
+        // Opciones: "basic" (Quita signos, stopwords y aplica stemming), "none".
+        "normalize_strategy": "basic",
+
+        // "text_encoding": Cómo pasar el texto limpio a números.
         // Opciones:
-        //   - "z-score": media 0 y desviación estándar 1.
-        //   - "min-max": (valor - min) / (max - min)
+        //   - "one-hot": 1 si la palabra está, 0 si no.
+        //   - "frequency": Frecuencia de la palabra.
+        //   - "tf-idf": Frecuencia ponderada por rareza.
         //   - "none": No hacer nada.
-        "scaling": "z-score",
+        "text_encoding": "tf-idf",
 
-        //"categorical_encoding": categorizar los string
-        //"categorical_encoding": "one-hot"
-        //   - "label": ir subiendo un numero por categoria.
-        //   - "one-hot": crea una nueva columna para cada categoria y pone un uno en las que lo sean
-        //   - "none": No hacer nada.
+        // "sampling_strategy": Estrategia para el balanceo de datos (Target imbalanceado).
+        // Opciones: "oversample" (clonar minoría), "undersample" (borrar mayoría), "none".
+        "sampling_strategy": "oversample",
 
-        // "text_process": Qué hacer con las columnas de texto.
-        // Opciones:
-        //   - "basic_clean": Pasa a minúsculas y quita espacios en blanco a los lados.
-        //   - "none": No hacer nada.
-        "text_process": "basic_clean"
+        // "sampling_ratio": Ratio al que llegar o "auto" para igualar todas las clases.
+        "sampling_ratio": "auto",
 
-        //"normalize_strategy"
-        // Opciones:
-        //   - "basic": Quita las palabras no significativas y se queda con las palabras raiz.
-        //   - "none": No hacer nada.
-
-        // "encoding": Estrategia para pasar de texto a numeros
-        // Opciones:
-        //   - "one-hot": Crea columnas (1 y 0) si sale la palabra.
-        //   - "Frecuency": Crea columnas de cuantas veces aparece cada palabra.
-        //   - "TF-IDF": Crea columnas con valores dependendiendo cuantas veces sale la palabra y como de común es.
-        //   - "none": No hacer nada.
-        "encoding": "one-hot",
-
-        // "sampling_strategy": Estrategia para el balanceo de datos
-        //   - "oversampling": Clona las filas de las categorías minoritarias
-        //   - "undersampling": Borra filas de la categoría mayoritaria
-
-        // "sampling_ratio": A que porcentaje debe llegar la clase minoritaria
-        "sampling_ratio": 0.3,
-
-        // "seed": semilla con la que se alearoeiza el balanceo
-        "seed": 42
+        // "sampling_seed": Semilla para que el balanceo aleatorio sea replicable.
+        "sampling_seed": 42
     }
 }

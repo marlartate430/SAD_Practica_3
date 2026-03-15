@@ -77,7 +77,74 @@ def asignar_tipos(df, tipos_json):
 
 
 # ==========================================
-# 4. FUNCIÓN PARA NULOS
+# 4. FUNCIÓN PARA VALORES ERRÓNEOS
+# ==========================================
+def tratar_valores_erroneos(df, config):
+    config_err = config.get("erroneous_values")
+    if not config_err or config_err.get("action") == "none":
+        return df
+
+    accion_global = config_err.get("action")
+    reglas = config_err.get("rules", {})  # diccionario con que hacer en cada columna
+
+    for col, regla in reglas.items():  # itetrar cada columna
+        if col not in df.columns:
+            continue
+
+        condiciones = regla.get("conditions", [])
+        estrategia = regla.get("strategy", "none")
+
+        mascara_errores = pd.Series(False, index=df.index)  # array de booleanos del mismo tamaño que los datos
+        # marca a true si hay un valor erroneo
+
+        for cond in condiciones:  # iterar cada condicion de la columna
+            tipo = cond.get("type")
+            valor = cond.get("value")
+
+            # poner a true en la mascara los que cumplan la condicion
+            if tipo == "less_than":
+                mascara_errores = mascara_errores | (df[col] < valor)
+            elif tipo == "greater_than":
+                mascara_errores = mascara_errores | (df[col] > valor)
+            elif tipo == "equals":
+                mascara_errores = mascara_errores | (df[col] == valor)
+            elif tipo == "in_list":
+                mascara_errores = mascara_errores | (df[col].isin(valor))
+            elif tipo == "regex":
+                mascara_errores = mascara_errores | df[col].astype(str).str.contains(valor, regex=True, na=False)
+            elif tipo == "has_decimals":
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    if valor is True:
+                        mascara_errores = mascara_errores | (df[col].notna() & (df[col] % 1 != 0))  # Csi el resto de dividir entre 1 no es 0, tiene decimales
+
+        # arreglar las filas que estan a true en la mascara
+        if mascara_errores.any():
+            if accion_global == "delete":
+                df = df[~mascara_errores]
+                print(f" -> Valores erróneos eliminados en la columna '{col}'.")
+            elif accion_global == "impute" and estrategia != "none":
+                if estrategia == "mean" and pd.api.types.is_numeric_dtype(df[col]):
+                    valor_imputar = df[col].mean()
+                    if pd.api.types.is_integer_dtype(df[col]):
+                        valor_imputar = int(round(valor_imputar))  # Redondear si es entero
+                    df.loc[mascara_errores, col] = valor_imputar
+
+                elif estrategia == "median" and pd.api.types.is_numeric_dtype(df[col]):
+                    valor_imputar = df[col].median()
+                    if pd.api.types.is_integer_dtype(df[col]):
+                        valor_imputar = int(round(valor_imputar))  # Redondear si es entero
+                    df.loc[mascara_errores, col] = valor_imputar
+
+                elif estrategia == "mode":
+                    if not df[col].mode().empty:
+                        df.loc[mascara_errores, col] = df[col].mode()[0]
+                print(f" -> Valores erróneos imputados en la columna '{col}' con '{estrategia}'.")
+
+    return df
+
+
+# ==========================================
+# 5. FUNCIÓN PARA NULOS
 # ==========================================
 def tratar_nulos(df, config):
     accion = config.get("missing_values")
@@ -93,20 +160,29 @@ def tratar_nulos(df, config):
                 if df[col].isnull().any():
                     if estrategia == "mode" and not df[col].mode().empty:
                         df[col] = df[col].fillna(df[col].mode()[0])
+
                     elif estrategia == "mean" and pd.api.types.is_numeric_dtype(df[col]):
-                        df[col] = df[col].fillna(df[col].mean())
+                        valor_imputar = df[col].mean()
+                        if pd.api.types.is_integer_dtype(df[col]):
+                            valor_imputar = int(round(valor_imputar))  # Redondear si es entero
+                        df[col] = df[col].fillna(valor_imputar)
+
                     elif estrategia == "median" and pd.api.types.is_numeric_dtype(df[col]):
-                        df[col] = df[col].fillna(df[col].median())
-                    elif estrategia == "max" and df[col].mode().empty:
+                        valor_imputar = df[col].median()
+                        if pd.api.types.is_integer_dtype(df[col]):
+                            valor_imputar = int(round(valor_imputar))  # Redondear si es entero
+                        df[col] = df[col].fillna(valor_imputar)
+
+                    elif estrategia == "max":
                         df[col] = df[col].fillna(df[col].max())
-                    elif estrategia == "min" and df[col].mode().empty:
+                    elif estrategia == "min":
                         df[col] = df[col].fillna(df[col].min())
         print(" -> Valores nulos imputados según estrategia.")
     return df
 
 
 # ==========================================
-# 5. FUNCIÓN PARA OUTLIERS
+# 6. FUNCIÓN PARA OUTLIERS
 # ==========================================
 def tratar_outliers(df, config):
     accion = config.get("outliers")
@@ -125,6 +201,12 @@ def tratar_outliers(df, config):
             IQR = Q3 - Q1
             limite_inf = Q1 - 1.5 * IQR
             limite_sup = Q3 + 1.5 * IQR
+
+            #Si la columna es entera, redondeamos
+            if pd.api.types.is_integer_dtype(df[col]):
+                limite_inf = int(round(limite_inf))
+                limite_sup = int(round(limite_sup))
+
             es_outlier = (df[col] < limite_inf) | (df[col] > limite_sup)  # definir que es un valor Outlier (usando IQR)
 
             if accion == "delete":
@@ -134,15 +216,21 @@ def tratar_outliers(df, config):
                 if estrategia == "max-min":
                     df[col] = df[col].clip(lower=limite_inf, upper=limite_sup)
                 elif estrategia == "median":
-                    df.loc[es_outlier, col] = df[col].median()
+                    valor_imputar = df[col].median()
+                    if pd.api.types.is_integer_dtype(df[col]):
+                        valor_imputar = int(round(valor_imputar))
+                    df.loc[es_outlier, col] = valor_imputar
                 elif estrategia == "mean":
-                    df.loc[es_outlier, col] = round(df[col].mean())
+                    valor_imputar = df[col].mean()
+                    if pd.api.types.is_integer_dtype(df[col]):
+                        valor_imputar = int(round(valor_imputar))
+                    df.loc[es_outlier, col] = valor_imputar
                 print(f" -> Outliers tratados de columna '{col}' usando la acción: {accion} con '{estrategia}'.")
     return df
 
 
 # ==========================================
-# 6. FUNCIÓN PARA ESCALADO
+# 7. FUNCIÓN PARA ESCALADO
 # ==========================================
 def escalar_datos(df, config):
     lista_estrategia = config.get("scaling")
@@ -162,7 +250,7 @@ def escalar_datos(df, config):
 
 
 # ==========================================
-# 7. FUNCIONES DE LIMPIEZA DE TEXTO
+# 8. FUNCIONES DE LIMPIEZA DE TEXTO
 # ==========================================
 def limpiar_texto(df, config):
     if config.get("text_process") == "basic_clean":
@@ -211,7 +299,7 @@ def normalizar_texto(df, config):
 
 
 # ==========================================
-# 8. FUNCIÓN PARA VECTORIZAR TEXTO
+# 9. FUNCIÓN PARA VECTORIZAR TEXTO
 # ==========================================
 def vectorizar_texto(df, config):
     estrategia = config.get("text_encoding")
@@ -249,7 +337,7 @@ def vectorizar_texto(df, config):
 
 
 # ==========================================
-# 9. FUNCIÓN PARA CODIFICAR EL TARGET
+# 10. FUNCIÓN PARA CODIFICAR EL TARGET
 # ==========================================
 def codificar_objetivo(df, config):
     target = config.get("target")
@@ -265,11 +353,11 @@ def codificar_objetivo(df, config):
 
 
 # ==========================================
-# 10. FUNCIÓN PARA CODIFICAR CATEGORÍAS
+# 11. FUNCIÓN PARA CODIFICAR CATEGORÍAS
 # ==========================================
 def codificar_categoricas(df, config):
     estrategia = config.get("categorical_encoding")
-    target = config.get("target_column")  # Escudo
+    target = config.get("target")  # Escudo
     if estrategia == "none": return df
 
     cols_categoricas = df.select_dtypes(
@@ -288,11 +376,11 @@ def codificar_categoricas(df, config):
 
 
 # ==========================================
-# 11. FUNCIÓN PARA BALANCEAR LOS DATOS
+# 12. FUNCIÓN PARA BALANCEAR LOS DATOS
 # ==========================================
 def balancear_datos(df, config):
-    estrategia = config.get("sampling")
-    target = config.get("target_column")
+    estrategia = config.get("sampling_strategy")
+    target = config.get("target")
     ratio = config.get("sampling_ratio")
     seed = config.get("sampling_seed", 42)
 
@@ -307,7 +395,6 @@ def balancear_datos(df, config):
             # Le pasamos el ratio al inicializar la herramienta
             ros = RandomOverSampler(sampling_strategy=ratio, random_state=seed)
             X_res, y_res = ros.fit_resample(X, y)
-
         elif estrategia == "undersample":
             rus = RandomUnderSampler(sampling_strategy=ratio, random_state=seed)
             X_res, y_res = rus.fit_resample(X, y)
@@ -332,50 +419,54 @@ def pipeline_preprocesamiento(df_path, json_path):
         config = json.load(f)["preproceso"]
     print(f"--- Iniciando preprocesado ({len(df)} filas originales) ---")
 
-    print("\n[1/11] Comprobando duplicados...")
+    print("\n[1/12] Comprobando duplicados...")
     df = eliminar_duplicados(df, config)
     # df.to_csv('1_duplicados_eliminados.csv', index=False)
 
-    print("\n[2/11] Limpiando columnas innecesarias...")
+    print("\n[2/12] Limpiando columnas innecesarias...")
     df = eliminar_columnas(df, config)
     # df.to_csv('2_columnas_eliminadas.csv', index=False)
 
-    print("\n[3/11] Asignando tipos de datos...")
+    print("\n[3/12] Asignando tipos de datos...")
     df = asignar_tipos(df, config.get("categoria", []))
     # df.to_csv('3_tipos_asignados.csv', index=False)
 
-    print("\n[4/11] Tratando valores nulos...")
+    print("\n[4/12] Tratando valores erróneos...")
+    df = tratar_valores_erroneos(df, config)
+    #df.to_csv('4_valores_erroneos_tratados.csv', index=False)
+
+    print("\n[5/12] Tratando valores nulos...")
     df = tratar_nulos(df, config)
-    # df.to_csv('4_nulos_tratados.csv', index=False)
+    # df.to_csv('5_nulos_tratados.csv', index=False)
 
-    print("\n[5/11] Tratando outliers...")
+    print("\n[6/12] Tratando outliers...")
     df = tratar_outliers(df, config)
-    # df.to_csv('5_outliers_tratados.csv', index=False)
+    # df.to_csv('6_outliers_tratados.csv', index=False)
 
-    print("\n[6/11] Escalando datos numéricos...")
+    print("\n[7/12] Escalando datos numéricos...")
     df = escalar_datos(df, config)
-    # df.to_csv('6_datos_escalados.csv', index=False)
+    # df.to_csv('7_datos_escalados.csv', index=False)
 
-    print("\n[7/11] Limpiando y normalizando texto...")
+    print("\n[8/12] Limpiando y normalizando texto...")
     df = limpiar_texto(df, config)
     df = normalizar_texto(df, config)
-    # df.to_csv('7_texto_normalizado.csv', index=False)
+    # df.to_csv('8_texto_normalizado.csv', index=False)
 
-    print("\n[8/11] Vectorizando texto (NLP)...")
+    print("\n[9/12] Vectorizando texto (NLP)...")
     df = vectorizar_texto(df, config)
-    # df.to_csv('8_texto_vectorizado.csv', index=False)
+    # df.to_csv('9_texto_vectorizado.csv', index=False)
 
-    print("\n[9/11] Codificando la variable objetivo (Target)...")
+    print("\n[10/12] Codificando la variable objetivo (Target)...")
     df = codificar_objetivo(df, config)
-    # df.to_csv('9_objetivo_codificado.csv', index=False)
+    # df.to_csv('10_objetivo_codificado.csv', index=False)
 
-    print("\n[10/11] Codificando variables categóricas...")
+    print("\n[11/12] Codificando variables categóricas...")
     df = codificar_categoricas(df, config)
-    # df.to_csv('10_categoricas_codificadas.csv', index=False)
+    # df.to_csv('11_categoricas_codificadas.csv', index=False)
 
-    print("\n[11/11] Balanceando clases (Oversampling / Undersampling)...")
+    print("\n[12/12] Balanceando clases...")
     df = balancear_datos(df, config)
-    # df.to_csv('11_datos_balanceados.csv', index=False)
+    # df.to_csv('12_datos_balanceados.csv', index=False)
 
     print(f"\n--- Finalizado. DataFrame resultante: {df.shape[0]} filas, {df.shape[1]} columnas ---")
     return df
@@ -385,6 +476,5 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)  # interrupcion CTR + C
 
     df_procesado = pipeline_preprocesamiento('datos.csv', 'config.json')
-
-    df_procesado.to_csv('datos_listos_para_modelo.csv', index=False)
-    print("\n¡Archivo 'datos_listos_para_modelo.csv' guardado con éxito!")
+    df_procesado.to_csv('datos_preprocesados.csv', index=False)
+    print("\n¡Archivo 'datos_preprocesados.csv' guardado con éxito!")

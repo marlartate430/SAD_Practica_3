@@ -1,23 +1,56 @@
-
 {
     "data": "datos.csv",
-    "target": "Sentimiento",
     "preproceso": {
         "target": "Sentimiento",
-        "categoria": ["id", "double", "double", "string", "text"],
-        "drop_columns": [],
+        "drop_columns": ["XYZ-0"],
+        "categoria": ["id", "int", "double", "string", "text", "string"],
         "drop_duplicates": true,
+        "erroneous_values": {
+            "action": "impute",
+            "rules": {
+                "Edad": {
+                    "conditions": [
+                        {"type": "less_than", "value": 0},
+                        {"type": "greater_than", "value": 110},
+                        {"type": "has_decimals", "value": true}
+                    ],
+                    "strategy": "median"
+                },
+                "Ingresos": {
+                    "conditions": [
+                        {"type": "less_than", "value": 0},
+                        {"type": "greater_than", "value": 500000},
+                        {"type": "has_decimals", "value": false}
+                    ],
+                    "strategy": "median"
+                },
+                "Categoria": {
+                    "conditions": [
+                        {"type": "regex", "value": "[^a-zA-Z0-9\\s]"},
+                        {"type":  "in_list", "value":  ["error", "indefinido"]}
+                    ],
+                    "strategy": "mode"
+                }
+            }
+        },
         "missing_values": "impute",
-        "impute_strategy": ["mode", "median", "mode"],
+        "impute_strategy": ["median", "mean", "mode", "none", "none"],
         "outliers": "impute",
         "outlier_strategy": ["max-min", "median"],
         "scaling": ["min-max", "z-score"],
-        "categorical_encoding": "label",
+        "categorical_encoding": "one-hot",
         "text_process": "basic_clean",
         "normalize_strategy": "basic",
-        "text_encoding": "frequency",
-        "sampling_strategy": "oversampling",
-        "sampling_ratio": 0.3,
+        "text_encoding": "tf-idf",
+        "sampling": "oversample",
+        "sampling_ratio": "auto",
         "sampling_seed": 42
+    },
+    "knn": {
+        "n_neighbors": [3, 5, 7, 9, 11, 15],
+        "weights": ["uniform", "distance"],
+        "p": [1, 2],
+        "test_size": 0.2,
+        "random_seed": 42
     }
 }
