@@ -1,0 +1,31 @@
+ID,Edad,Ingresos,Categoria,Comentario,Sentimiento,XYZ-0
+201,25,38000,Technology,Screen resolution is crystal clear.,Positivo,XYZ-201
+202,34,,Clothing,The fabric is so soft and comfortable.,Positivo,XYZ-202
+203,42,59000,Home,Terrible instructions impossible to build.,Negativo,XYZ-203
+204,,41000,Sports,Does the job but could be better.,Neutral,XYZ-204
+205,29,33000,Toys,My son plays with it everyday.,Positivo,XYZ-205
+206,150,90000,Technology,Too complicated for me.,Negativo,XYZ-206
+207,31,47000,Clothing,Wrong item delivered.,Negativo,XYZ-207
+208,46,75000,Home,Beautiful design and very sturdy.,Positivo,XYZ-208
+209,27,35000.5,Sports,Broke after one week of use.,Negativo,XYZ-209
+210,39,52000,Technology,Average laptop battery is okay.,Neutral,XYZ-210
+211,22,26000,Cloth?ng,Looks cheap and smells like chemicals.,Negativo,XYZ-211
+212,,82000,Home,Best purchase I made this year.,Positivo,XYZ-212
+213,51,68000,Sports,Very light and comfortable to hold.,Positivo,XYZ-213
+214,36,44000,Toys,Dangerous sharp edges do not buy.,Negativo,XYZ-214
+215,28,39000,Technology,Fast shipping and works perfectly.,Positivo,XYZ-215
+216,40,61000,Home,Smaller than expected but functional.,Neutral,XYZ-216
+217,33,48000,Sports,Perfect for yoga and stretching.,Positivo,XYZ-217
+218,55,89000,Technology,Overpriced for what it offers.,Negativo,XYZ-218
+219,26,-2000,Clothing,The seam ripped the first time I wore it.,Negativo,XYZ-219
+220,38,55000,Toys,Okay quality but boring.,Neutral,XYZ-220
+221,45,71000,Home,Matches my furniture perfectly love it.,Positivo,XYZ-221
+222,24,29000,Sports,Water bottle leaks constantly.,Negativo,XYZ-222
+223,31,43000,Technology,The keyboard is very ergonomic.,Positivo,XYZ-223
+224,,34000,Clothing,Washed it once and the color is gone.,Negativo,XYZ-224
+225,48,76000,Home,It makes a weird buzzing sound.,Negativo,XYZ-225
+226,27,37000,Toys,Great educational value for toddlers.,Positivo,XYZ-226
+227,52,81000,Sports,Solid construction highly recommended.,Positivo,XYZ-227
+228,35,,Technology,Could not connect it to the wifi.,Negativo,XYZ-228
+229,29,40000,Clothing,Fits okay nothing special.,Neutral,XYZ-229
+230,41,63000,Home,Very bright light saves energy.,Positivo,XYZ-230

@@ -1,5 +1,6 @@
 {
-    "data": "datos.csv",
+    "train": "train.csv",
+    "test": "test.csv",
     "preproceso": {
         "target": "Sentimiento",
         "drop_columns": ["XYZ-0"],
@@ -42,7 +43,7 @@
         "text_process": "basic_clean",
         "normalize_strategy": "basic",
         "text_encoding": "tf-idf",
-        "sampling": "oversample",
+        "sampling_strategy": "oversample",
         "sampling_ratio": "auto",
         "sampling_seed": 42
     },
