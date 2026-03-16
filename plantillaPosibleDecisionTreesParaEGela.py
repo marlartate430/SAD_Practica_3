@@ -290,7 +290,7 @@ def preprocesar_datos():
 
 # Funciones para entrenar un modelo
 
-def divide_data():
+def divide_data(df):
     """
     Función que divide los datos en conjuntos de entrenamiento y desarrollo.
 
@@ -306,7 +306,7 @@ def divide_data():
     """
     # Sacamos la columna a predecir
  #TODO
- 
+
  
 def save_model(gs):
     """
@@ -392,7 +392,7 @@ def kNN():
     # Guardamos el modelo utilizando pickle
     save_model(gs)
 
-def decision_tree():
+def decision_tree(data):
     """
     Función para implementar el algoritmo de árbol de decisión.
 
@@ -401,13 +401,26 @@ def decision_tree():
     :return: Tupla con la clasificación de los datos.
     :rtype: tuple
     """
+
+    # Doy por hecho que args ya esta inicializada?
+
+    # El peso puede ser una
+    class_weight = None # Peso de todos los elementos es 1
+    if peso == "Balanceado":
+        class_weight = "balanced"
+    elif peso != None:
+        class_weight = peso
+
     # Dividimos los datos en entrenamiento y dev
-    x_train, x_dev, y_train, y_dev = divide_data()
+    x_train, x_dev, y_train, y_dev = divide_data(data)
     
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
-        #TODO Llamar al decision trees
-        #gs = GridSearchCV(
+        # TODO Llamar al decision trees
+        gs = GridSearchCV(
+            DecisionTreeClassifier(),
+            args.arbol_decision,
+
    
     execution_time = end_time - start_time
     print("Tiempo de ejecución:"+Fore.MAGENTA, execution_time,Fore.RESET+ "segundos")
@@ -537,7 +550,7 @@ if __name__ == "__main__":
                 print(e)
         elif args.algorithm == "decision_tree":
             try:
-                decision_tree()
+                decision_tree(data)
                 print(Fore.GREEN+"Algoritmo árbol de decisión ejecutado con éxito"+Fore.RESET)
                 sys.exit(0)
             except Exception as e:
