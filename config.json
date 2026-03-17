@@ -1,10 +1,10 @@
 {
-    "train": "train.csv",
-    "test": "test.csv",
+    "train": "penguins_train.csv",
+    "test": "penguins_test.csv",
     "preproceso": {
-        "target": "Sentimiento",
-        "drop_columns": ["XYZ-0"],
-        "categoria": ["id", "int", "double", "string", "text", "string"],
+        "target": "species",
+        "drop_columns": "",
+        "categoria": ["string", "string", "double", "double", "double", "string"],
         "drop_duplicates": true,
         "erroneous_values": {
             "action": "impute",
@@ -35,10 +35,10 @@
             }
         },
         "missing_values": "impute",
-        "impute_strategy": ["median", "mean", "mode", "none", "none"],
+        "impute_strategy": ["median", "mode", "mode", "mode", "mode"],
         "outliers": "impute",
-        "outlier_strategy": ["max-min", "median"],
-        "scaling": ["min-max", "z-score"],
+        "outlier_strategy": ["max-min", "median", "median", "median", "median"],
+        "scaling": ["min-max", "min-max"],
         "categorical_encoding": "one-hot",
         "text_process": "basic_clean",
         "normalize_strategy": "basic",
@@ -48,10 +48,12 @@
         "sampling_seed": 42
     },
     "knn": {
-        "n_neighbors": [3, 5, 7, 9, 11, 15],
+        "n_neighbors": [1, 3, 5, 7, 9, 11, 15],
         "weights": ["uniform", "distance"],
         "p": [1, 2],
         "test_size": 0.2,
-        "random_seed": 42
+        "scoring": "f1_macro",
+        "cv": 5,
+        "use_k_fold": true
     }
 }
