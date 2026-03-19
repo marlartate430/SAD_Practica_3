@@ -52,16 +52,8 @@
         "criterion": "gini",
         "splitter": "best",
         "max_depth": [3, 6, 9],
-        "min_samples_split": 2, /*
-        - Este es el maximo valor en el barrido de este hiperparametro
-        - min_samples_split: tamano minimo que tiene que tener la (sub)muestra
-        antes de que sea dividido por un nodo.
-        */
-        "min_samples_leaf": 2 /*
-         - Este es el maximo valor en el barrido de este hiperparametro
-         - min_samples_leaf: tamano minimo que tiene que tener la submuestra
-         resultado despues de haber pasado por un nodo
-         */
+        "min_samples_split": 2,
+        "min_samples_leaf": 2
     }
 
 }
