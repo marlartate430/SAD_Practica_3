@@ -36,6 +36,39 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler
 from tqdm import tqdm
 
+
+
+# CONSTANTES
+CONFIG_FILE = "config.json"
+
+
+# Funciones que ha hecho Gorka
+def calculate_confusion_matrix(y_test, y_pred):
+    """
+    Función para calcular la matriz de confusión
+    :param y_test: Valores reales
+    :param y_pred: Valores predichos
+    :return: Matriz de confusión
+    """
+    from sklearn.metrics import confusion_matrix
+    cm = confusion_matrix(y_test, y_pred)
+    return cm
+
+def calculate_fscore(y_test, y_pred):
+    """
+    Función para calcular el F-score
+    :param y_test: Valores reales
+    :param y_pred: Valores predichos
+    :return: F-score (micro), F-score (macro)
+    """
+    from sklearn.metrics import f1_score
+    fscore_micro = f1_score(y_test, y_pred, average='micro')
+    fscore_macro = f1_score(y_test, y_pred, average='macro')
+    return fscore_micro, fscore_macro
+
+
+
+
 # Funciones auxiliares
 
 def signal_handler(sig, frame):
@@ -64,7 +97,7 @@ def parse_args():
     args = parse.parse_args()
     
     # Leemos los parametros del JSON
-    with open('clasificador.json') as json_file:
+    with open(CONFIG_FILE) as json_file:
         config = json.load(json_file)
     
     # Juntamos todo en una variable
@@ -354,7 +387,7 @@ def mostrar_resultados(gs, x_dev, y_dev):
         print(Fore.MAGENTA+"> Mejor puntuacion:\n"+Fore.RESET, gs.best_score_)
         print(Fore.MAGENTA+"> F1-score micro:\n"+Fore.RESET, calculate_fscore(y_dev, gs.predict(x_dev))[0])
         print(Fore.MAGENTA+"> F1-score macro:\n"+Fore.RESET, calculate_fscore(y_dev, gs.predict(x_dev))[1])
-        print(Fore.MAGENTA+"> Informe de clasificación:\n"+Fore.RESET, calculate_classification_report(y_dev, gs.predict(x_dev)))
+        # print(Fore.MAGENTA+"> Informe de clasificación:\n"+Fore.RESET, calculate_classification_report(y_dev, gs.predict(x_dev)))
         print(Fore.MAGENTA+"> Matriz de confusión:\n"+Fore.RESET, calculate_confusion_matrix(y_dev, gs.predict(x_dev)))
 
 def kNN():
@@ -402,24 +435,28 @@ def decision_tree(data):
     :rtype: tuple
     """
 
-    # Doy por hecho que args ya esta inicializada?
-
-    # El peso puede ser una
-    class_weight = None # Peso de todos los elementos es 1
-    if peso == "Balanceado":
-        class_weight = "balanced"
-    elif peso != None:
-        class_weight = peso
-
     # Dividimos los datos en entrenamiento y dev
     x_train, x_dev, y_train, y_dev = divide_data(data)
-    
+
+
+    parametros_decision_tree = args["arbol_decision"]
+    parametros_decision_tree["min_samples_split"] = range(1, parametros_decision_tree["min_samples_split"])
+    parametros_decision_tree["min_samples_leaf"] = range(1, parametros_decision_tree["min_samples_leaf"])
+
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
         # TODO Llamar al decision trees
         gs = GridSearchCV(
             DecisionTreeClassifier(),
-            args.arbol_decision,
+            parametros_decision_tree,
+            cv=-5,
+            n_jobs=args.cpu,
+            scoring=args.estimator
+        )
+
+        start_time = time.time()
+        gs.fit(x_train, y_train)
+        end_time = time.time()
 
    
     execution_time = end_time - start_time
@@ -432,6 +469,7 @@ def decision_tree(data):
     save_model(gs)
     
 def random_forest():
+    pass
     """
     Función que entrena un modelo de Random Forest utilizando GridSearchCV para encontrar los mejores hiperparámetros.
     Divide los datos en entrenamiento y desarrollo, realiza la búsqueda de hiperparámetros, guarda el modelo entrenado
@@ -443,7 +481,7 @@ def random_forest():
     Retorna:
         Ninguno
     """
-    
+    """
     # Dividimos los datos en entrenamiento y dev
     x_train, x_dev, y_train, y_dev = divide_data()
     
@@ -459,6 +497,7 @@ def random_forest():
     
     # Guardamos el modelo utilizando pickle
     save_model(gs)
+    """
 
 # Funciones para predecir con un modelo
 
@@ -498,7 +537,7 @@ def predict():
     
     # Añadimos la prediccion al dataframe data
     data = pd.concat([data, pd.DataFrame(prediction, columns=[args.prediction])], axis=1)
-    
+
 # Función principal
 
 if __name__ == "__main__":
@@ -541,6 +580,7 @@ if __name__ == "__main__":
     if args.mode == "train":
         # Ejecutamos el algoritmo seleccionado
         print("\n- Ejecutando algoritmo...")
+
         if args.algorithm == "kNN":
             try:
                 kNN()
@@ -584,5 +624,3 @@ if __name__ == "__main__":
     else:
         print(Fore.RED+"Modo no soportado"+Fore.RESET)
         sys.exit(1)
-
-if __name__ == "__main__":
