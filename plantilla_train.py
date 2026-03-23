@@ -532,9 +532,22 @@ def dt_sweep(df_pro, target_col, config):
         x_train = df_pro.iloc[:, :-1].values
         y_train = df_pro.iloc[:, -1].values
 
-    parametros_decision_tree = config
-    parametros_decision_tree["min_samples_split"] = range(1, parametros_decision_tree["min_samples_split"] + 1)
-    parametros_decision_tree["min_samples_leaf"] = range(1, parametros_decision_tree["min_samples_leaf"] + 1)
+    parametros_decision_tree = []
+    claves = config.keys()
+
+    for indice, profundidad in enumerate(config.get("max_depth", [])):
+        diccionario_actual = {}
+        for clave in claves:
+            if clave == "min_samples_split" or clave == "min_samples_leaf":
+                diccionario_actual[clave] = range(1, config[clave] + 1)
+            else:
+                diccionario_actual[clave] = [config[clave][indice]]
+
+        parametros_decision_tree.append(diccionario_actual)
+
+    print(parametros_decision_tree)
+
+    # El enunciado dice que hay que usar 1 y 2, pero sklearn da advertencias
 
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
@@ -561,11 +574,18 @@ def dt_sweep(df_pro, target_col, config):
     execution_time = end_time - start_time
     print("Tiempo de ejecución:" + Fore.MAGENTA, execution_time, Fore.RESET + "segundos")
 
+    best_params = gs.best_params_
+    best_model = gs.best_estimator_
+    best_score = gs.best_score_
+
+
     # Mostramos los resultados
     # mostrar_resultados(gs, x_dev, y_dev)
 
     # Guardamos el modelo utilizando pickle
     # save_model(gs)
+
+    return best_params, best_model, best_score
 
 
 # ==========================================
