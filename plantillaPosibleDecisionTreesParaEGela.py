@@ -36,6 +36,39 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler
 from tqdm import tqdm
 
+
+
+# CONSTANTES
+CONFIG_FILE = "config.json"
+
+
+# Funciones que ha hecho Gorka
+def calculate_confusion_matrix(y_test, y_pred):
+    """
+    Función para calcular la matriz de confusión
+    :param y_test: Valores reales
+    :param y_pred: Valores predichos
+    :return: Matriz de confusión
+    """
+    from sklearn.metrics import confusion_matrix
+    cm = confusion_matrix(y_test, y_pred)
+    return cm
+
+def calculate_fscore(y_test, y_pred):
+    """
+    Función para calcular el F-score
+    :param y_test: Valores reales
+    :param y_pred: Valores predichos
+    :return: F-score (micro), F-score (macro)
+    """
+    from sklearn.metrics import f1_score
+    fscore_micro = f1_score(y_test, y_pred, average='micro')
+    fscore_macro = f1_score(y_test, y_pred, average='macro')
+    return fscore_micro, fscore_macro
+
+
+
+
 # Funciones auxiliares
 
 def signal_handler(sig, frame):
@@ -64,7 +97,7 @@ def parse_args():
     args = parse.parse_args()
     
     # Leemos los parametros del JSON
-    with open('clasificador.json') as json_file:
+    with open(CONFIG_FILE) as json_file:
         config = json.load(json_file)
     
     # Juntamos todo en una variable
@@ -290,7 +323,7 @@ def preprocesar_datos():
 
 # Funciones para entrenar un modelo
 
-def divide_data():
+def divide_data(df):
     """
     Función que divide los datos en conjuntos de entrenamiento y desarrollo.
 
@@ -306,7 +339,7 @@ def divide_data():
     """
     # Sacamos la columna a predecir
  #TODO
- 
+
  
 def save_model(gs):
     """
@@ -354,7 +387,7 @@ def mostrar_resultados(gs, x_dev, y_dev):
         print(Fore.MAGENTA+"> Mejor puntuacion:\n"+Fore.RESET, gs.best_score_)
         print(Fore.MAGENTA+"> F1-score micro:\n"+Fore.RESET, calculate_fscore(y_dev, gs.predict(x_dev))[0])
         print(Fore.MAGENTA+"> F1-score macro:\n"+Fore.RESET, calculate_fscore(y_dev, gs.predict(x_dev))[1])
-        print(Fore.MAGENTA+"> Informe de clasificación:\n"+Fore.RESET, calculate_classification_report(y_dev, gs.predict(x_dev)))
+        # print(Fore.MAGENTA+"> Informe de clasificación:\n"+Fore.RESET, calculate_classification_report(y_dev, gs.predict(x_dev)))
         print(Fore.MAGENTA+"> Matriz de confusión:\n"+Fore.RESET, calculate_confusion_matrix(y_dev, gs.predict(x_dev)))
 
 def kNN():
@@ -392,7 +425,7 @@ def kNN():
     # Guardamos el modelo utilizando pickle
     save_model(gs)
 
-def decision_tree():
+def decision_tree(data):
     """
     Función para implementar el algoritmo de árbol de decisión.
 
@@ -401,13 +434,30 @@ def decision_tree():
     :return: Tupla con la clasificación de los datos.
     :rtype: tuple
     """
+
     # Dividimos los datos en entrenamiento y dev
-    x_train, x_dev, y_train, y_dev = divide_data()
-    
+    x_train, x_dev, y_train, y_dev = divide_data(data)
+
+
+    parametros_decision_tree = args["arbol_decision"]
+    parametros_decision_tree["min_samples_split"] = range(1, parametros_decision_tree["min_samples_split"])
+    parametros_decision_tree["min_samples_leaf"] = range(1, parametros_decision_tree["min_samples_leaf"])
+
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
-        #TODO Llamar al decision trees
-        #gs = GridSearchCV(
+        # TODO Llamar al decision trees
+        gs = GridSearchCV(
+            DecisionTreeClassifier(),
+            parametros_decision_tree,
+            cv=-5,
+            n_jobs=args.cpu,
+            scoring=args.estimator
+        )
+
+        start_time = time.time()
+        gs.fit(x_train, y_train)
+        end_time = time.time()
+
    
     execution_time = end_time - start_time
     print("Tiempo de ejecución:"+Fore.MAGENTA, execution_time,Fore.RESET+ "segundos")
@@ -419,6 +469,7 @@ def decision_tree():
     save_model(gs)
     
 def random_forest():
+    pass
     """
     Función que entrena un modelo de Random Forest utilizando GridSearchCV para encontrar los mejores hiperparámetros.
     Divide los datos en entrenamiento y desarrollo, realiza la búsqueda de hiperparámetros, guarda el modelo entrenado
@@ -430,7 +481,7 @@ def random_forest():
     Retorna:
         Ninguno
     """
-    
+    """
     # Dividimos los datos en entrenamiento y dev
     x_train, x_dev, y_train, y_dev = divide_data()
     
@@ -446,6 +497,7 @@ def random_forest():
     
     # Guardamos el modelo utilizando pickle
     save_model(gs)
+    """
 
 # Funciones para predecir con un modelo
 
@@ -485,7 +537,7 @@ def predict():
     
     # Añadimos la prediccion al dataframe data
     data = pd.concat([data, pd.DataFrame(prediction, columns=[args.prediction])], axis=1)
-    
+
 # Función principal
 
 if __name__ == "__main__":
@@ -528,6 +580,7 @@ if __name__ == "__main__":
     if args.mode == "train":
         # Ejecutamos el algoritmo seleccionado
         print("\n- Ejecutando algoritmo...")
+
         if args.algorithm == "kNN":
             try:
                 kNN()
@@ -537,7 +590,7 @@ if __name__ == "__main__":
                 print(e)
         elif args.algorithm == "decision_tree":
             try:
-                decision_tree()
+                decision_tree(data)
                 print(Fore.GREEN+"Algoritmo árbol de decisión ejecutado con éxito"+Fore.RESET)
                 sys.exit(0)
             except Exception as e:
@@ -571,5 +624,3 @@ if __name__ == "__main__":
     else:
         print(Fore.RED+"Modo no soportado"+Fore.RESET)
         sys.exit(1)
-
-if __name__ == "__main__":
