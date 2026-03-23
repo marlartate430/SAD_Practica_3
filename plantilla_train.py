@@ -420,7 +420,6 @@ def balancear_datos(df_train, df_test, config):
     if estrategia == "none" or not target or target not in df_train.columns:
         return df_train, df_test
 
-    # ¡REGLA DE ORO! Solo tocamos el Train. El Test representa el mundo real.
     X_train = df_train.drop(columns=[target])
     y_train = df_train[target]
 
@@ -473,27 +472,36 @@ def pipeline_preprocesamiento(json_path):
     df_train, df_test = tratar_outliers(df_train, df_test, config)
 
     print("\n[7/12] Escalando datos numéricos...")
+    # Creamos copia sin escalar para los algoritmos basados en árboles
+    df_train_unscaled = df_train.copy()
+    df_test_unscaled = df_test.copy()
+
     df_train, df_test = escalar_datos(df_train, df_test, config)
 
     print("\n[8/12] Limpiando y normalizando texto...")
     df_train, df_test = limpiar_y_normalizar_texto(df_train, df_test, config)
+    df_train_unscaled, df_test_unscaled = limpiar_y_normalizar_texto(df_train_unscaled, df_test_unscaled, config)
 
     print("\n[9/12] Vectorizando texto (NLP)...")
     df_train, df_test = vectorizar_texto(df_train, df_test, config)
+    df_train_unscaled, df_test_unscaled = vectorizar_texto(df_train_unscaled, df_test_unscaled, config)
 
     print("\n[10/12] Codificando la variable objetivo (Target)...")
     df_train, df_test = codificar_objetivo(df_train, df_test, config)
+    df_train_unscaled, df_test_unscaled = codificar_objetivo(df_train_unscaled, df_test_unscaled, config)
 
     print("\n[11/12] Codificando variables categóricas...")
     df_train, df_test = codificar_categoricas(df_train, df_test, config)
+    df_train_unscaled, df_test_unscaled = codificar_categoricas(df_train_unscaled, df_test_unscaled, config)
 
     print("\n[12/12] Balanceando clases...")
     df_train, df_test = balancear_datos(df_train, df_test, config)
+    df_train_unscaled, df_test_unscaled = balancear_datos(df_train_unscaled, df_test_unscaled, config)
 
     print(
         f"\n--- Finalizado. DataFrame resultante: Train {df_train.shape[0]} filas, Test {df_test.shape[0]} filas, {df_train.shape[1]} columnas ---")
 
-    return df_train, df_test, config_completo
+    return df_train, df_test, df_train_unscaled, df_test_unscaled, config_completo
 
 
 # ==========================================
@@ -546,6 +554,38 @@ def kNN_sweep(train_data, target_col, knn_config):
 
 
 # ==========================================
+# ENTRENAMIENTO DECISION TREES (PLACEHOLDER)
+# ==========================================
+def dt_sweep(train_data, target_col, dt_config):
+    print(" -> Ejecutando barrido de hiperparámetros para Decision Trees (En desarrollo)...")
+    return {"placeholder": True}, None, 0.0
+
+
+# ==========================================
+# ENTRENAMIENTO RANDOM FOREST (PLACEHOLDER)
+# ==========================================
+def rf_sweep(train_data, target_col, rf_config):
+    print(" -> Ejecutando barrido de hiperparámetros para Random Forest (En desarrollo)...")
+    return {"placeholder": True}, None, 0.0
+
+
+# ==========================================
+# ENTRENAMIENTO LOGISTIC REGRESSION (PLACEHOLDER)
+# ==========================================
+def lr_sweep(train_data, target_col, lr_config):
+    print(" -> Ejecutando barrido de hiperparámetros para Logistic Regression (En desarrollo)...")
+    return {"placeholder": True}, None, 0.0
+
+
+# ==========================================
+# ENTRENAMIENTO NAÏVE BAYES (PLACEHOLDER)
+# ==========================================
+def nb_sweep(train_data, target_col, nb_config):
+    print(" -> Ejecutando barrido de hiperparámetros para Naïve Bayes (En desarrollo)...")
+    return {"placeholder": True}, None, 0.0
+
+
+# ==========================================
 # FUNCIÓN PARA SELECCIONAR Y EXPORTAR EL MEJOR MODELO
 # ==========================================
 def evaluar_y_seleccionar_mejor_modelo(modelos_entrenados):
@@ -572,27 +612,28 @@ def evaluar_y_seleccionar_mejor_modelo(modelos_entrenados):
     for algo, datos in modelos_entrenados.items():
         print(f"    - {algo}: Score {datos['score']:.4f}")
 
-    print(f"\n[🏆] EL GANADOR ABSOLUTO ES: {mejor_algoritmo}")
+    print(f"\n[🏆] EL GANADOR ES: {mejor_algoritmo}")
     print(f"     -> Puntuación (F1 Macro CV): {mejor_score_global:.4f}")
     print(f"     -> Parámetros Óptimos: {mejores_params_globales}")
 
-    # Exportamos solo el mejor modelo
-    nombre_archivo = 'mejor_modelo.pkl'
-    joblib.dump(mejor_modelo_global, nombre_archivo)
-    print(f"\n[+] El modelo campeón ha sido exportado exitosamente a: {nombre_archivo}")
-
+    # Exportamos solo el mejor modelo, verificamos que no sea el "None" de los placeholders
+    if mejor_modelo_global is not None:
+        nombre_archivo = 'mejor_modelo.pkl'
+        joblib.dump(mejor_modelo_global, nombre_archivo)
+        print(f"\nEl modelo campeón ha sido exportado exitosamente a: {nombre_archivo}")
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)  # interrupcion CTR + C
 
-    # 1. EJECUCIÓN DEL PIPELINE DE PREPROCESADO
-    df_train_proc, df_test_proc, config_completo = pipeline_preprocesamiento('config.json')
+    df_train_proc, df_test_proc, df_train_unscaled, df_test_unscaled, config_completo = pipeline_preprocesamiento('config.json') # El preproceso entero, aqui hay que poner el sysarg[1]
 
     target_col = config_completo["preproceso"]["target"]
 
-    # Guardamos los archivos listos para usarlos en el otro script de evaluación con Test
-    df_train_proc.to_csv('train_listo.csv', index=False)
+    # Guardamos los archivos listos para usarlos en el otro script
+    #df_train_proc.to_csv('train_listo.csv', index=False)
     df_test_proc.to_csv('test_listo.csv', index=False)
+    #df_train_unscaled.to_csv('train_unscaled_listo.csv', index=False)
+    df_test_unscaled.to_csv('test_unscaled_listo.csv', index=False)
     print("\n¡Archivos preprocesados guardados con éxito!")
 
     print("\n=========================================")
@@ -600,77 +641,54 @@ if __name__ == "__main__":
     print("=========================================")
 
     # Diccionario para almacenar el mejor modelo de cada algoritmo, su puntuación y sus parámetros
-    modelos_entrenados = {}
+    modelos = {}
 
-    # ---------------------------------------------------------
-    # NOTA: Bifurcación de datos para diferentes familias de modelos
-    # ---------------------------------------------------------
-    # Si quisieras datos SIN escalar para Árboles y Random Forest,
-    # podrías guardar una copia del DataFrame justo antes de la etapa 7 (escalar_datos).
-    # Por ahora utilizaremos df_train_proc para mostrar la estructura.
+    algoritmos = config_completo.get("algoritmos_a_usar", [])
 
     # ==============================================
-    # 1. K-NEAREST NEIGHBORS (KNN)
+    # 1. KNN
     # ==============================================
-    print("\n--- 1. ENTRENANDO KNN ---")
-    knn_config = config_completo.get("knn", {})
-    best_params_knn, best_model_knn, best_score_knn = kNN_sweep(df_train_proc, target_col, knn_config)
+    if "knn" in algoritmos:
+        print("\n--- 1. ENTRENANDO KNN ---")
+        knn_config = config_completo.get("knn", {})
+        best_params_knn, best_model_knn, best_score_knn = kNN_sweep(df_train_proc, target_col, knn_config) # Barrido de hiperparametros
 
-    # Guardamos el resultado en nuestro diccionario de competición (incluyendo los parámetros)
-    modelos_entrenados["KNN"] = {
-        "modelo": best_model_knn,
-        "score": best_score_knn,
-        "params": best_params_knn
-    }
+        modelos["KNN"] = {
+            "modelo": best_model_knn,
+            "score": best_score_knn,
+            "params": best_params_knn
+        }
 
     # ==============================================
-    # 2. DECISION TREES (ÁRBOLES DE DECISIÓN)
+    # 2. DECISION TREES
     # ==============================================
-    print("\n--- 2. ENTRENANDO DECISION TREES ---")
-    # TODO: Añadir lógica y GridSearch para Decision Trees.
-    # Recuerda: Este modelo no necesita datos escalados.
-    # best_params_dt, best_model_dt, best_score_dt = dt_sweep(...)
-    # modelos_entrenados["Decision Trees"] = {
-    #     "modelo": best_model_dt, "score": best_score_dt, "params": best_params_dt
-    # }
+    if "decision_trees" in algoritmos:
+        print("\n--- 2. ENTRENANDO DECISION TREES ---")
+
 
     # ==============================================
     # 3. RANDOM FOREST
     # ==============================================
-    print("\n--- 3. ENTRENANDO RANDOM FOREST ---")
-    # TODO: Añadir lógica y GridSearch para Random Forest.
-    # Recuerda: Al igual que los árboles de decisión, es insensible al escalado.
-    # best_params_rf, best_model_rf, best_score_rf = rf_sweep(...)
-    # modelos_entrenados["Random Forest"] = {
-    #     "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
-    # }
+    if "random_forest" in algoritmos:
+        print("\n--- 3. ENTRENANDO RANDOM FOREST ---")
+
 
     # ==============================================
-    # 4. LOGISTIC REGRESSION (REGRESIÓN LOGÍSTICA)
+    # 4. LOGISTIC REGRESSION
     # ==============================================
-    print("\n--- 4. ENTRENANDO LOGISTIC REGRESSION ---")
-    # TODO: Añadir lógica y GridSearch para Logistic Regression.
-    # Recuerda: Modelo sensible a la escala (como el KNN), el uso de df_train_proc escalado es ideal.
-    # best_params_lr, best_model_lr, best_score_lr = lr_sweep(...)
-    # modelos_entrenados["Logistic Regression"] = {
-    #     "modelo": best_model_lr, "score": best_score_lr, "params": best_params_lr
-    # }
+    if "logistic_regression" in algoritmos:
+        print("\n--- 4. ENTRENANDO LOGISTIC REGRESSION ---")
+
 
     # ==============================================
     # 5. NAÏVE BAYES
     # ==============================================
-    print("\n--- 5. ENTRENANDO NAÏVE BAYES ---")
-    # TODO: Añadir lógica para Naïve Bayes.
-    # Recuerda: Usualmente se prueba con GaussianNB, MultinomialNB (si los datos no son negativos), etc.
-    # best_params_nb, best_model_nb, best_score_nb = nb_sweep(...)
-    # modelos_entrenados["Naïve Bayes"] = {
-    #     "modelo": best_model_nb, "score": best_score_nb, "params": best_params_nb
-    # }
+    if "naive_bayes" in algoritmos:
+        print("\n--- 5. ENTRENANDO NAÏVE BAYES ---")
+
 
     # ==============================================
-    # SELECCIÓN Y EXPORTACIÓN DEL MEJOR MODELO GLOBAL
+    # SELECCIÓN Y EXPORTACIÓN DEL MEJOR MODELO
     # ==============================================
-    # Pasamos TODOS los modelos entrenados a la función final para que los evalúe y elija
-    evaluar_y_seleccionar_mejor_modelo(modelos_entrenados)
-
-    print("\n[!] Fin del pipeline.")
+    if modelos:
+        evaluar_y_seleccionar_mejor_modelo(modelos)
