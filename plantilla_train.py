@@ -17,6 +17,17 @@ from nltk.stem import SnowballStemmer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB, MultinomialNB, CategoricalNB
+import tqdm
+from sklearn.tree import DecisionTreeClassifier
+import time
+import random
+
+
+# POR CAMBIAR
+CV_POR_DEFECTO = 5
+CPU_POR_DEFECTO = -1
+STIMATOR_POR_DEFECTO = None
+
 
 nltk.download('stopwords', quiet=True)
 
@@ -547,6 +558,89 @@ def kNN_sweep(train_data, target_col, knn_config):
 
 
 # ==========================================
+# ENTRENAMIENTO DECISION TREE
+# ==========================================
+def dt_sweep(df_pro, target_col, config):
+    """
+    Función para implementar el algoritmo de árbol de decisión.
+
+    :param data: Conjunto de datos para realizar la clasificación.
+    :type data: pandas.DataFrame
+    :return: Tupla con la clasificación de los datos.
+    :rtype: tuple
+    """
+
+    # No habria que pasar este bloque de codigo antes de las llamadas a los modelos?
+    # 1. Separar características (X) y objetivo (y) SOLAMENTE para TRAIN
+
+    x_train = None
+    y_train = None
+
+    if target_col in df_pro.columns:
+        x_train = df_pro.drop(columns=[target_col]).values
+        y_train = df_pro[target_col].values
+    else:
+        x_train = df_pro.iloc[:, :-1].values
+        y_train = df_pro.iloc[:, -1].values
+
+    parametros_decision_tree = []
+    claves = config.keys()
+
+    for indice, profundidad in enumerate(config.get("max_depth", [])):
+        diccionario_actual = {}
+        for clave in claves:
+            if clave == "min_samples_split" or clave == "min_samples_leaf":
+                diccionario_actual[clave] = range(1, config[clave] + 1)
+            else:
+                diccionario_actual[clave] = [config[clave][indice]]
+
+        parametros_decision_tree.append(diccionario_actual)
+
+    print(parametros_decision_tree)
+
+    # El enunciado dice que hay que usar 1 y 2, pero sklearn da advertencias
+
+    # Hacemos un barrido de hiperparametros
+    with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
+        # TODO Llamar al decision trees
+        gs = GridSearchCV(
+            DecisionTreeClassifier(),
+            parametros_decision_tree,
+            cv=CV_POR_DEFECTO,
+            n_jobs=CPU_POR_DEFECTO,
+            scoring=STIMATOR_POR_DEFECTO
+        )
+
+        start_time = time.time()
+        gs.fit(x_train, y_train)
+        end_time = time.time()
+
+        for i in range(100):
+            time.sleep(random.uniform(0.06, 0.15))  # Esperamos un tiempo aleatorio
+            pbar.update(random.random() * 2)  # Actualizamos la barra con un valor aleatorio
+        pbar.n = 100
+        pbar.last_print_n = 100
+        pbar.update(0)
+
+    execution_time = end_time - start_time
+    print("Tiempo de ejecución:" + Fore.MAGENTA, execution_time, Fore.RESET + "segundos")
+
+    best_params = gs.best_params_
+    best_model = gs.best_estimator_
+    best_score = gs.best_score_
+
+
+    # Mostramos los resultados
+    # mostrar_resultados(gs, x_dev, y_dev)
+
+    # Guardamos el modelo utilizando pickle
+    # save_model(gs)
+
+    return best_params, best_model, best_score
+
+
+
+# ==========================================
 # ENTRENAMIENTO NAÏVE BAYES
 # ==========================================
 def nb_sweep(train_data, target_col, nb_config):
@@ -685,14 +779,17 @@ if __name__ == "__main__":
     # ==============================================
     # 2. DECISION TREES (ÁRBOLES DE DECISIÓN)
     # ==============================================
-    if "decision_trees" in algoritmos_elegidos:
+    if "random_forest" in algoritmos_elegidos:
         print("\n--- 2. ENTRENANDO DECISION TREES ---")
         # TODO: Añadir lógica y GridSearch para Decision Trees.
         # Recuerda: Este modelo no necesita datos escalados.
-        # best_params_dt, best_model_dt, best_score_dt = dt_sweep(...)
-        # modelos_entrenados["Decision Trees"] = {
-        #     "modelo": best_model_dt, "score": best_score_dt, "params": best_params_dt
-        # }
+        dt_config = config_completo.get("arbol_decision", {})
+        best_params_dt, best_model_dt, best_score_dt = dt_sweep(df_train_proc, target_col, dt_config)
+        modelos_entrenados["Decision Trees"] = {
+            "modelo": best_model_dt,
+            "score": best_score_dt,
+            "params": best_params_dt
+        }
 
     # ==============================================
     # 3. RANDOM FOREST
