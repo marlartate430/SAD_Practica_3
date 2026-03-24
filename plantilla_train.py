@@ -652,11 +652,15 @@ def rf_sweep(df_pro, target_col, config):
     Divide los datos en entrenamiento y desarrollo, realiza la búsqueda de hiperparámetros, guarda el modelo entrenado
     utilizando pickle y muestra los resultados utilizando los datos de desarrollo.
 
-    Parámetros:
-        Ninguno
+    :param df_pro: Datos procesados con las caracteristicas con las que se va a trabajar.
+    :type df_pro: pandas.DataFrame
+    :param target_col: Columna que se quiere predecir.
+    :type target_col: pandas.Series
+    :param config: parametros y configuracion reservada para el random forest.
+    :type config: Diccionario
 
-    Retorna:
-        Ninguno
+    :return: Tupla con la clasificación de los datos.
+    :rtype: tuple
     """
     x_train = None
     y_train = None
