@@ -7,7 +7,6 @@ import json
 import re
 import joblib
 
-# Librerías de Machine Learning y NLP
 from sklearn.model_selection import train_test_split, GridSearchCV, ShuffleSplit
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
@@ -17,8 +16,8 @@ from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, CategoricalNB
 
-# Descargar diccionarios de NLTK en inglés de fondo
 nltk.download('stopwords', quiet=True)
 
 
@@ -215,7 +214,6 @@ def tratar_outliers(df_train, df_test, config):
 
     for col, estrategia in zip(cols_numericas, lista_estrategia):
         if estrategia != "none":
-            # APRENDIZAJE DESDE TRAIN
             # Métod del Rango Intercuartílico (IQR): va a meter los outliers en el rango de 1.5*el rango del 50% de la mediana
             Q1 = df_train[col].quantile(0.25)
             Q3 = df_train[col].quantile(0.75)
@@ -472,28 +470,31 @@ def pipeline_preprocesamiento(json_path):
     print("\n[6/12] Tratando outliers...")
     df_train, df_test = tratar_outliers(df_train, df_test, config)
 
-    print("\n[7/12] Escalando datos numéricos...")
-    df_train, df_test = escalar_datos(df_train, df_test, config)
-
-    print("\n[8/12] Limpiando y normalizando texto...")
+    print("\n[7/12] Limpiando y normalizando texto...")
     df_train, df_test = limpiar_y_normalizar_texto(df_train, df_test, config)
 
-    print("\n[9/12] Vectorizando texto (NLP)...")
+    print("\n[8/12] Vectorizando texto (NLP)...")
     df_train, df_test = vectorizar_texto(df_train, df_test, config)
 
-    print("\n[10/12] Codificando la variable objetivo (Target)...")
+    print("\n[9/12] Codificando la variable objetivo (Target)...")
     df_train, df_test = codificar_objetivo(df_train, df_test, config)
 
-    print("\n[11/12] Codificando variables categóricas...")
+    print("\n[10/12] Codificando variables categóricas...")
     df_train, df_test = codificar_categoricas(df_train, df_test, config)
 
-    print("\n[12/12] Balanceando clases...")
+    print("\n[11/12] Balanceando clases...")
     df_train, df_test = balancear_datos(df_train, df_test, config)
+
+    df_train_unscaled = df_train.copy()
+    df_test_unscaled = df_test.copy()
+
+    print("\n[12/12] Escalando datos numéricos...")
+    df_train, df_test = escalar_datos(df_train, df_test, config)
 
     print(
         f"\n--- Finalizado. DataFrame resultante: Train {df_train.shape[0]} filas, Test {df_test.shape[0]} filas, {df_train.shape[1]} columnas ---")
 
-    return df_train, df_test, config_completo
+    return df_train_unscaled, df_test_unscaled, df_train, df_test, config_completo
 
 
 # ==========================================
@@ -546,6 +547,66 @@ def kNN_sweep(train_data, target_col, knn_config):
 
 
 # ==========================================
+# ENTRENAMIENTO NAÏVE BAYES
+# ==========================================
+def nb_sweep(train_data, target_col, nb_config):
+    # 1. Separar características (X) y objetivo (y) SOLAMENTE para TRAIN
+    if target_col in train_data.columns:
+        X_train = train_data.drop(columns=[target_col]).values
+        y_train = train_data[target_col].values
+    else:
+        X_train = train_data.iloc[:, :-1].values
+        y_train = train_data.iloc[:, -1].values
+
+    print(f" -> Datos cargados para Naïve Bayes: {len(X_train)} filas en Train.")
+
+    tipo_modelo = nb_config.get("model_type", "gaussian")
+
+    if tipo_modelo == "multinomial":
+        print(" -> Instanciando MultinomialNB (Ideal para conteos discretos / NLP).")
+        nb = MultinomialNB()
+        param_grid = {
+            'alpha': nb_config.get("alpha", [0.01, 0.1, 0.5, 1.0, 2.0])
+        }
+    elif tipo_modelo == "categorical":
+        print(" -> Instanciando CategoricalNB (Ideal para características categóricas discretas).")
+        nb = CategoricalNB()
+        param_grid = {
+            'alpha': nb_config.get("alpha", [0.01, 0.1, 0.5, 1.0, 2.0])
+        }
+    else:
+        print(" -> Instanciando GaussianNB (Ideal para variables continuas o mixtas).")
+        nb = GaussianNB()
+        param_grid = {
+            'var_smoothing': nb_config.get("var_smoothing", [1e-9, 1e-8, 1e-7, 1e-6, 1e-5])
+        }
+
+    scoring = nb_config.get("scoring", "f1_macro")
+    use_k_fold = nb_config.get("use_k_fold", True)
+
+    if use_k_fold:
+        cv_folds = nb_config.get("cv_folds", 5)
+        cv_strategy = cv_folds
+        print(f"\n -> Iniciando barrido de hiperparámetros (K-Folds con {cv_folds} particiones)...")
+    else:
+        test_size = nb_config.get("test_size", 0.2)
+        cv_strategy = ShuffleSplit(n_splits=1, test_size=test_size, random_state=42)
+        print(f"\n -> Iniciando barrido de hiperparámetros (1 solo split con {test_size * 100}% para Dev)...")
+
+    # 3. Entrenamos el modelo usando GridSearchCV
+    grid_search = GridSearchCV(estimator=nb, param_grid=param_grid, cv=cv_strategy, scoring=scoring, n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    best_params = grid_search.best_params_
+    best_model = grid_search.best_estimator_
+    best_score = grid_search.best_score_
+
+    print(f" -> ¡Barrido completado! Mejores hiperparámetros encontrados: {best_params} (Score: {best_score:.4f})")
+
+    return best_params, best_model, best_score
+
+
+# ==========================================
 # FUNCIÓN PARA SELECCIONAR Y EXPORTAR EL MEJOR MODELO
 # ==========================================
 def evaluar_y_seleccionar_mejor_modelo(modelos_entrenados):
@@ -586,11 +647,16 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)  # interrupcion CTR + C
 
     # 1. EJECUCIÓN DEL PIPELINE DE PREPROCESADO
-    df_train_proc, df_test_proc, config_completo = pipeline_preprocesamiento('config.json')
+    # Ahora devuelve también los DataFrames sin escalar
+    df_train_unscaled, df_test_unscaled, df_train_proc, df_test_proc, config_completo = pipeline_preprocesamiento(
+        'config.json')
 
     target_col = config_completo["preproceso"]["target"]
 
-    # Guardamos los archivos listos para usarlos en el otro script de evaluación con Test
+    # Extraemos la lista de algoritmos a usar (por defecto si no la encuentra hace KNN y Naive Bayes)
+    algoritmos_elegidos = config_completo.get("algoritmos_a_usar", ["knn", "naive_bayes"])
+
+    # Guardamos los escalados por defecto en el CSV
     df_train_proc.to_csv('train_listo.csv', index=False)
     df_test_proc.to_csv('test_listo.csv', index=False)
     print("\n¡Archivos preprocesados guardados con éxito!")
@@ -599,73 +665,75 @@ if __name__ == "__main__":
     print("      ENTRENAMIENTO DE MODELOS           ")
     print("=========================================")
 
-    # Diccionario para almacenar el mejor modelo de cada algoritmo, su puntuación y sus parámetros
     modelos_entrenados = {}
-
-    # ---------------------------------------------------------
-    # NOTA: Bifurcación de datos para diferentes familias de modelos
-    # ---------------------------------------------------------
-    # Si quisieras datos SIN escalar para Árboles y Random Forest,
-    # podrías guardar una copia del DataFrame justo antes de la etapa 7 (escalar_datos).
-    # Por ahora utilizaremos df_train_proc para mostrar la estructura.
 
     # ==============================================
     # 1. K-NEAREST NEIGHBORS (KNN)
     # ==============================================
-    print("\n--- 1. ENTRENANDO KNN ---")
-    knn_config = config_completo.get("knn", {})
-    best_params_knn, best_model_knn, best_score_knn = kNN_sweep(df_train_proc, target_col, knn_config)
+    if "knn" in algoritmos_elegidos:
+        print("\n--- 1. ENTRENANDO KNN ---")
+        knn_config = config_completo.get("knn", {})
+        # KNN usa los datos ESCALADOS (df_train_proc)
+        best_params_knn, best_model_knn, best_score_knn = kNN_sweep(df_train_proc, target_col, knn_config)
 
-    # Guardamos el resultado en nuestro diccionario de competición (incluyendo los parámetros)
-    modelos_entrenados["KNN"] = {
-        "modelo": best_model_knn,
-        "score": best_score_knn,
-        "params": best_params_knn
-    }
+        modelos_entrenados["KNN"] = {
+            "modelo": best_model_knn,
+            "score": best_score_knn,
+            "params": best_params_knn
+        }
 
     # ==============================================
     # 2. DECISION TREES (ÁRBOLES DE DECISIÓN)
     # ==============================================
-    print("\n--- 2. ENTRENANDO DECISION TREES ---")
-    # TODO: Añadir lógica y GridSearch para Decision Trees.
-    # Recuerda: Este modelo no necesita datos escalados.
-    # best_params_dt, best_model_dt, best_score_dt = dt_sweep(...)
-    # modelos_entrenados["Decision Trees"] = {
-    #     "modelo": best_model_dt, "score": best_score_dt, "params": best_params_dt
-    # }
+    if "decision_trees" in algoritmos_elegidos:
+        print("\n--- 2. ENTRENANDO DECISION TREES ---")
+        # TODO: Añadir lógica y GridSearch para Decision Trees.
+        # Recuerda: Este modelo no necesita datos escalados.
+        # best_params_dt, best_model_dt, best_score_dt = dt_sweep(...)
+        # modelos_entrenados["Decision Trees"] = {
+        #     "modelo": best_model_dt, "score": best_score_dt, "params": best_params_dt
+        # }
 
     # ==============================================
     # 3. RANDOM FOREST
     # ==============================================
-    print("\n--- 3. ENTRENANDO RANDOM FOREST ---")
-    # TODO: Añadir lógica y GridSearch para Random Forest.
-    # Recuerda: Al igual que los árboles de decisión, es insensible al escalado.
-    # best_params_rf, best_model_rf, best_score_rf = rf_sweep(...)
-    # modelos_entrenados["Random Forest"] = {
-    #     "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
-    # }
+    if "random_forest" in algoritmos_elegidos:
+        print("\n--- 3. ENTRENANDO RANDOM FOREST ---")
+        # TODO: Añadir lógica y GridSearch para Random Forest.
+        # Recuerda: Al igual que los árboles de decisión, es insensible al escalado.
+        # best_params_rf, best_model_rf, best_score_rf = rf_sweep(...)
+        # modelos_entrenados["Random Forest"] = {
+        #     "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
+        # }
 
     # ==============================================
     # 4. LOGISTIC REGRESSION (REGRESIÓN LOGÍSTICA)
     # ==============================================
-    print("\n--- 4. ENTRENANDO LOGISTIC REGRESSION ---")
-    # TODO: Añadir lógica y GridSearch para Logistic Regression.
-    # Recuerda: Modelo sensible a la escala (como el KNN), el uso de df_train_proc escalado es ideal.
-    # best_params_lr, best_model_lr, best_score_lr = lr_sweep(...)
-    # modelos_entrenados["Logistic Regression"] = {
-    #     "modelo": best_model_lr, "score": best_score_lr, "params": best_params_lr
-    # }
+    if "logistic_regression" in algoritmos_elegidos:
+        print("\n--- 4. ENTRENANDO LOGISTIC REGRESSION ---")
+        # TODO: Añadir lógica y GridSearch para Logistic Regression.
+        # Recuerda: Modelo sensible a la escala (como el KNN), el uso de df_train_proc escalado es ideal.
+        # best_params_lr, best_model_lr, best_score_lr = lr_sweep(...)
+        # modelos_entrenados["Logistic Regression"] = {
+        #     "modelo": best_model_lr, "score": best_score_lr, "params": best_params_lr
+        # }
 
     # ==============================================
     # 5. NAÏVE BAYES
     # ==============================================
-    print("\n--- 5. ENTRENANDO NAÏVE BAYES ---")
-    # TODO: Añadir lógica para Naïve Bayes.
-    # Recuerda: Usualmente se prueba con GaussianNB, MultinomialNB (si los datos no son negativos), etc.
-    # best_params_nb, best_model_nb, best_score_nb = nb_sweep(...)
-    # modelos_entrenados["Naïve Bayes"] = {
-    #     "modelo": best_model_nb, "score": best_score_nb, "params": best_params_nb
-    # }
+    if "naive_bayes" in algoritmos_elegidos:
+        print("\n--- 5. ENTRENANDO NAÏVE BAYES ---")
+        # TODO: Añadir lógica para Naïve Bayes.
+        # Recuerda: Usualmente se prueba con GaussianNB, MultinomialNB (si los datos no son negativos), etc.
+        nb_config = config_completo.get("naive_bayes", {})
+        # Usamos df_train_unscaled porque Naïve Bayes NO requiere escalado
+        best_params_nb, best_model_nb, best_score_nb = nb_sweep(df_train_unscaled, target_col, nb_config)
+
+        modelos_entrenados["Naïve Bayes"] = {
+            "modelo": best_model_nb,
+            "score": best_score_nb,
+            "params": best_params_nb
+        }
 
     # ==============================================
     # SELECCIÓN Y EXPORTACIÓN DEL MEJOR MODELO GLOBAL

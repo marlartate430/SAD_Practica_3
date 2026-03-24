@@ -10,7 +10,6 @@
     // "test": Ruta del archivo CSV que contiene los datos de test.
     "test": "penguins_test.csv",
 
-
     "preproceso": {
 
         // "target": La columna a predecir.
@@ -46,7 +45,7 @@
                 "Edad": {
                     "conditions": [
                         {"type": "less_than", "value": 0},
-                        {"type": "greater_than", "value": 110}
+                        {"type": "greater_than", "value": 110},
                         {"type": "has_decimals", "value": true}
                     ],
                     "strategy": "median"
@@ -54,7 +53,7 @@
                 "Ingresos": {
                     "conditions": [
                         {"type": "less_than", "value": 0},
-                        {"type": "greater_than", "value": 500000}
+                        {"type": "greater_than", "value": 500000},
                         {"type": "has_decimals", "value": false}
                     ],
                     "strategy": "median"
@@ -124,12 +123,6 @@
         "sampling_seed": 42
     },
 
-
-
-
-
-
-
     "knn": {
         // "n_neighbors": Lista de números de vecinos a probar.
         "n_neighbors": [1, 3, 5, 7, 9, 11, 15],
@@ -146,11 +139,37 @@
         // "scoring": Métrica para elegir al ganador (Ej: "f1_macro", "accuracy").
         "scoring": "f1_macro",
 
+        // "use_k_fold": true para usar K-Folds
+        "use_k_fold": true,
+
+        // "cv_folds": Número de particiones en la que se divide para en train y dev ( si es 5, 4 para train y 1 para dev).
+        "cv_folds": 5
+    },
+
+    "naive_bayes": {
+        // "model_type": Tipo de algoritmo Naïve Bayes a utilizar.
+        // Opciones:
+        //   - "gaussian": para variables continuas o mixtas.
+        //   - "multinomial": para textos.
+        //   - "categorical": para variables categóricas.
+        "model_type": "gaussian",
+
+        // "var_smoothing": (Solo aplicable si es "gaussian"). Fracción de la mayor varianza añadida a todas las varianzas para evitar dividir por cero.
+        "var_smoothing": [1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6],
+
+        // "alpha": (Solo aplicable si es "multinomial" o "categorical"). Parámetro para el Suavizado de Laplace. El estándar es 1.0.
+        "alpha": [0.01, 0.1, 0.5, 1.0, 2.0],
+
+        // "test_size": % de datos para validación si no usas K-Fold.
+        "test_size": 0.2,
+
+        // "scoring": Métrica para elegir al ganador (Ej: "f1_macro", "accuracy").
+        "scoring": "f1_macro",
 
         // "use_k_fold": true para usar K-Folds
-        "use_k_fold": true
+        "use_k_fold": true,
 
-        // "cv": Número de particiones en la que se divide para en train y dev ( si es 5, 4 para train y 1 para dev).
-        "cv": 5,
+        // "cv_folds": Número de particiones en la que se divide para en train y dev ( si es 5, 4 para train y 1 para dev).
+        "cv_folds": 5
     }
 }
