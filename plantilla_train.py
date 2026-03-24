@@ -7,6 +7,7 @@ import json
 import re
 import joblib
 from colorama import Fore
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from sklearn.model_selection import train_test_split, GridSearchCV, ShuffleSplit
 from imblearn.over_sampling import RandomOverSampler
@@ -18,8 +19,8 @@ from nltk.stem import SnowballStemmer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB, MultinomialNB, CategoricalNB
-import tqdm
-from sklearn.tree import DecisionTreeClassifier
+from tqdm import tqdm
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 import time
 import random
 
@@ -584,12 +585,19 @@ def dt_sweep(df_pro, target_col, config):
         x_train = df_pro.iloc[:, :-1].values
         y_train = df_pro.iloc[:, -1].values
 
+    tipo_de_decision_tree = DecisionTreeClassifier
+
+    if config.get("regression"):
+        tipo_de_decision_tree = DecisionTreeRegressor
+
     parametros_decision_tree = []
     claves = config.keys()
+    claves_parametros_decision_tree = [clave for clave in claves if clave != "regression"]
+    # Deberia ainadir en el json, que elementos no se deben incluit en el grid_searchCV?
 
     for indice, profundidad in enumerate(config.get("max_depth", [])):
         diccionario_actual = {}
-        for clave in claves:
+        for clave in claves_parametros_decision_tree:
             if clave == "min_samples_split" or clave == "min_samples_leaf":
                 diccionario_actual[clave] = range(1, config[clave] + 1)
             else:
@@ -597,15 +605,13 @@ def dt_sweep(df_pro, target_col, config):
 
         parametros_decision_tree.append(diccionario_actual)
 
-    print(parametros_decision_tree)
-
     # El enunciado dice que hay que usar 1 y 2, pero sklearn da advertencias
 
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
         # TODO Llamar al decision trees
         gs = GridSearchCV(
-            DecisionTreeClassifier(),
+            tipo_de_decision_tree(),
             parametros_decision_tree,
             cv=CV_POR_DEFECTO,
             n_jobs=CPU_POR_DEFECTO,
@@ -640,6 +646,83 @@ def dt_sweep(df_pro, target_col, config):
     return best_params, best_model, best_score
 
 
+def rf_sweep(df_pro, target_col, config):
+    """
+    Función que entrena un modelo de Random Forest utilizando GridSearchCV para encontrar los mejores hiperparámetros.
+    Divide los datos en entrenamiento y desarrollo, realiza la búsqueda de hiperparámetros, guarda el modelo entrenado
+    utilizando pickle y muestra los resultados utilizando los datos de desarrollo.
+
+    Parámetros:
+        Ninguno
+
+    Retorna:
+        Ninguno
+    """
+    x_train = None
+    y_train = None
+
+    if target_col in df_pro.columns:
+        x_train = df_pro.drop(columns=[target_col]).values
+        y_train = df_pro[target_col].values
+    else:
+        x_train = df_pro.iloc[:, :-1].values
+        y_train = df_pro.iloc[:, -1].values
+
+    tipo_de_random_forest = RandomForestClassifier
+    if config.get("regression"):
+        tipo_de_random_forest = RandomForestRegressor
+
+    parametros_random_forest = []
+    claves = config.keys()
+    claves_parametros_random_forest = [clave for clave in claves if clave != "regression"]
+    # Deberia ainadir en el json, que elementos no se deben incluit en el grid_searchCV?
+
+    for indice, profundidad in enumerate(config.get("max_depth", [])):
+        diccionario_actual = {}
+        for clave in claves_parametros_random_forest:
+            if clave == "min_samples_split" or clave == "min_samples_leaf":
+                diccionario_actual[clave] = range(1, config[clave] + 1)
+            else:
+                diccionario_actual[clave] = [config[clave][indice]]
+
+        claves_parametros_random_forest.append(diccionario_actual)
+
+    # Hacemos un barrido de hiperparametros
+    with tqdm(total=100, desc='Procesando random forest', unit='iter', leave=True) as pbar:
+        #TODO Llamar al decision trees
+        gs = GridSearchCV(
+            tipo_de_random_forest(),
+            parametros_random_forest,
+            n_jobs=CPU_POR_DEFECTO,
+            cv=CV_POR_DEFECTO,
+            scoring=STIMATOR_POR_DEFECTO
+        )
+
+        start_time = time.time()
+        gs.fit(x_train, y_train)
+        end_time = time.time()
+
+        for i in range(100):
+            time.sleep(random.uniform(0.06, 0.15))  # Esperamos un tiempo aleatorio
+            pbar.update(random.random() * 2)  # Actualizamos la barra con un valor aleatorio
+        pbar.n = 100
+        pbar.last_print_n = 100
+        pbar.update(0)
+
+    execution_time = end_time - start_time
+    print("Tiempo de ejecución:"+Fore.MAGENTA, execution_time,Fore.RESET+ "segundos")
+
+    best_params = gs.best_params_
+    best_model = gs.best_estimator_
+    best_score = gs.best_score_
+
+    # Mostramos los resultados
+    # mostrar_resultados(gs, x_dev, y_dev)
+
+    # Guardamos el modelo utilizando pickle
+    # save_model(gs)
+
+    return best_params, best_model, best_score
 
 # ==========================================
 # ENTRENAMIENTO NAÏVE BAYES
@@ -780,11 +863,11 @@ if __name__ == "__main__":
     # ==============================================
     # 2. DECISION TREES (ÁRBOLES DE DECISIÓN)
     # ==============================================
-    if "random_forest" in algoritmos_elegidos:
+    if "decision_trees" in algoritmos_elegidos:
         print("\n--- 2. ENTRENANDO DECISION TREES ---")
         # TODO: Añadir lógica y GridSearch para Decision Trees.
         # Recuerda: Este modelo no necesita datos escalados.
-        dt_config = config_completo.get("arbol_decision", {})
+        dt_config = config_completo.get("decision_trees", {})
         best_params_dt, best_model_dt, best_score_dt = dt_sweep(df_train_proc, target_col, dt_config)
         modelos_entrenados["Decision Trees"] = {
             "modelo": best_model_dt,
@@ -799,10 +882,11 @@ if __name__ == "__main__":
         print("\n--- 3. ENTRENANDO RANDOM FOREST ---")
         # TODO: Añadir lógica y GridSearch para Random Forest.
         # Recuerda: Al igual que los árboles de decisión, es insensible al escalado.
-        # best_params_rf, best_model_rf, best_score_rf = rf_sweep(...)
-        # modelos_entrenados["Random Forest"] = {
-        #     "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
-        # }
+        rf_config = config_completo.get("random_forest", {})
+        best_params_rf, best_model_rf, best_score_rf = rf_sweep(df_train_proc, target_col, rf_config)
+        modelos_entrenados["Random Forest"] = {
+             "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
+        }
 
     # ==============================================
     # 4. LOGISTIC REGRESSION (REGRESIÓN LOGÍSTICA)

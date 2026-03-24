@@ -1,5 +1,5 @@
 {
-    "algoritmos_a_usar": ["decision_tree"],
+    "algoritmos_a_usar": ["decision_trees"],
     "train": "penguins_train.csv",
     "test": "penguins_test.csv",
     "preproceso": {
@@ -66,13 +66,22 @@
         "use_k_fold": true
     },
 
-    "arbol_decision" : {
-        "criterion": "gini",
-        "splitter": "best",
+    "decision_trees" : {
+        "regression" : false,
         "criterion": ["gini","gini", "gini"],
         "splitter": ["best","best","best"],
         "max_depth": [3, 6, 9],
         "min_samples_split": 2,
         "min_samples_leaf": 2
+    },
+
+    "random_forest" : {
+        "regression" : false,
+        "n_stimators" : [5],
+        "criterion" : ["gini"],
+        "max_depth" : [3],
+        "min_samples_split": 2,
+        "min_samples_leaf": 2,
+        "max_features" : ["sqrt"]
     }
 }
