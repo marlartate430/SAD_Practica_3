@@ -172,4 +172,57 @@
         // "cv_folds": Número de particiones en la que se divide para en train y dev ( si es 5, 4 para train y 1 para dev).
         "cv_folds": 5
     }
+    "decision_trees": {
+        // "regression": Define el tipo de problema.
+        // false para Clasificación (predecir categorías), true para Regresión (predecir valores numéricos).
+        "regression": false,
+
+        // "criterion": Función para medir la calidad de una división en el árbol.
+        // Opciones comunes (clasificación): "gini", "entropy".
+        "criterion": ["gini", "gini", "gini"],
+
+        // "splitter": Estrategia para elegir la división en cada nodo.
+        // Opciones: "best" (elige la mejor división posible), "random" (elige la mejor división aleatoria).
+        "splitter": ["best", "best", "best"],
+
+        // "max_depth": Profundidad máxima del árbol. Limita cuántos niveles puede crecer.
+        // Evita el sobreajuste (overfitting).
+        "max_depth": [3, 6, 9],
+
+        // "min_samples_split": Número mínimo de muestras necesarias para dividir un nodo interno.
+        // NOTA: Se lee esto como un rango [inicio, fin, paso].
+        // Ejemplo: [2, 5, 1] probará los valores 2, 3, 4 y 5.
+        "min_samples_split": [2, 5, 1],
+
+        // "min_samples_leaf": Número mínimo de muestras que deben quedar en un nodo hoja (el final de una rama).
+        // También funciona como rango [inicio, fin, paso].
+        "min_samples_leaf": [1, 5, 1]
+    },
+
+    "random_forest": {
+        // "regression": false para Clasificación, true para Regresión.
+        "regression": false,
+
+        // "n_estimators": Número de árboles que se van a crear en el bosque.
+        // Cuantos más árboles, más robusto, pero más tardará en entrenar.
+        "n_estimators": [5],
+
+        // "criterion": Función para medir la calidad de la división en cada árbol individual.
+        "criterion": ["gini"],
+
+        // "max_depth": Profundidad máxima permitida para cada uno de los árboles del bosque.
+        "max_depth": [3],
+
+        // "min_samples_split": Número mínimo de muestras para dividir un nodo.
+        // Funciona como rango [inicio, fin, paso].
+        "min_samples_split": [2, 5, 1],
+
+        // "min_samples_leaf": Número mínimo de muestras permitidas en un nodo hoja.
+        // Funciona como rango [inicio, fin, paso].
+        "min_samples_leaf": [1, 5, 1],
+
+        // "max_features": Número máximo de características (columnas) que el algoritmo evalúa al buscar la mejor división.
+        // Opciones: "sqrt" (raíz cuadrada del total de columnas), "log2", o "None" (usa todas).
+        "max_features": ["sqrt"]
+    }
 }

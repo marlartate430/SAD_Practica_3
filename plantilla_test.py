@@ -2,16 +2,16 @@
 """
 Script para la evaluación de modelos de Machine Learning.
 Carga los datos de test procesados y los modelos exportados (.pkl)
-para calcular métricas avanzadas y la matriz de confusión.
+para calcular métricas avanzadas, la matriz de confusión y exportar las predicciones.
 """
 
 import json
 import sys
-
 import pandas as pd
 import numpy as np
 import joblib
 import os
+import glob
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, precision_score, recall_score
 
 
@@ -34,10 +34,9 @@ def format_confusion_matrix(y_test, y_pred):
 def print_advanced_metrics(y_test, y_pred):
     """
     Función para calcular e imprimir Accuracy Global, y Precision, Recall, Specificity y F-score por cada clase.
-    Calcula la media Macro solo si hay más de 2 clases.
+    Calcula las medias Macro y Micro.
     """
     labels = sorted(list(set(y_test) | set(y_pred)))
-    num_classes = len(labels)
 
     # El Accuracy es global (cuántos acertó de todos los que había)
     accuracy = accuracy_score(y_test, y_pred)
@@ -67,29 +66,31 @@ def print_advanced_metrics(y_test, y_pred):
         print(
             f"{label:<12} | {precision_per_class[i]:<10.4f} | {recall_per_class[i]:<10.4f} | {specificity_per_class[i]:<12.4f} | {f1_per_class[i]:<10.4f}")
 
-    # Si hay más de 2 clases (Multiclase), calculamos y mostramos las medias Macro
-    if num_classes > 2:
-        print("-" * 65)
-        prec_macro = precision_score(y_test, y_pred, average='macro', zero_division=0)
-        rec_macro = recall_score(y_test, y_pred, average='macro', zero_division=0)
-        f1_macro = f1_score(y_test, y_pred, average='macro', zero_division=0)
-        spec_macro = np.mean(specificity_per_class)
+    print("-" * 65)
 
-        print(
-            f"{'MEDIA ':<12} | {prec_macro:<10.4f} | {rec_macro:<10.4f} | {spec_macro:<12.4f} | {f1_macro:<10.4f}")
+    # Calcular y mostrar las medias Macro y Micro
+    prec_macro = precision_score(y_test, y_pred, average='macro', zero_division=0)
+    rec_macro = recall_score(y_test, y_pred, average='macro', zero_division=0)
+    f1_macro = f1_score(y_test, y_pred, average='macro', zero_division=0)
+    spec_macro = np.mean(specificity_per_class)
+
+    # Micro F1, Precision y Recall son matemáticamente iguales al Accuracy en clasificación multiclase
+    f1_micro = f1_score(y_test, y_pred, average='micro', zero_division=0)
+
+    print(f"{'MEDIA MACRO':<12} | {prec_macro:<10.4f} | {rec_macro:<10.4f} | {spec_macro:<12.4f} | {f1_macro:<10.4f}")
+    print(f"{'MEDIA MICRO':<12} | {'-':<10} | {'-':<10} | {'-':<12} | {f1_micro:<10.4f}")
 
 
-def evaluar_modelo(nombre_modelo, archivo_pkl, df_test, target_col):
+def evaluar_modelo(archivo_pkl, df_test, target_col):
     """
-    Función genérica para cargar un modelo y evaluarlo con el set de test.
+    Función genérica para cargar un modelo, evaluarlo con el set de test
+    y devolver las predicciones generadas.
     """
+    nombre_modelo = os.path.basename(archivo_pkl).replace(".pkl", "")
+
     print(f"\n==========================================================")
     print(f" EVALUANDO MODELO: {nombre_modelo.upper()}")
     print(f"==========================================================")
-
-    if not os.path.exists(archivo_pkl):
-        print(f" [!] Archivo '{archivo_pkl}' no encontrado. Asegúrate de entrenar este modelo primero.")
-        return
 
     # 1. Separar características (X) y objetivo (y) para TEST
     if target_col in df_test.columns:
@@ -100,8 +101,12 @@ def evaluar_modelo(nombre_modelo, archivo_pkl, df_test, target_col):
         y_test = df_test.iloc[:, -1].values
 
     # 2. Cargar el modelo
-    modelo = joblib.load(archivo_pkl)
-    print(f" -> Modelo cargado exitosamente desde: {archivo_pkl}")
+    try:
+        modelo = joblib.load(archivo_pkl)
+        print(f" -> Modelo cargado exitosamente desde: {archivo_pkl}")
+    except Exception as e:
+        print(f" [!] Error al cargar el modelo '{archivo_pkl}': {e}")
+        return None
 
     # 3. Predecir
     y_pred = modelo.predict(X_test)
@@ -113,19 +118,13 @@ def evaluar_modelo(nombre_modelo, archivo_pkl, df_test, target_col):
     print("\n[ Métricas de Evaluación ]")
     print_advanced_metrics(y_test, y_pred)
 
+    return y_pred
+
 
 if __name__ == "__main__":
     test_file = "test_listo.csv"
     config_file = "config.json"
-
-    # Verificamos que existan los archivos necesarios
-    if not os.path.exists(config_file):
-        print(f"Error: No se encuentra {config_file}.")
-        sys.exit(1)
-
-    if not os.path.exists(test_file):
-        print(f"Error: No se encuentra {test_file}. Ejecuta el preprocesamiento primero.")
-        sys.exit(1)
+    archivo_predicciones = "predicciones_modelos.csv"
 
     # Cargar la configuración para saber cuál es el target
     with open(config_file, 'r') as f:
@@ -136,27 +135,34 @@ if __name__ == "__main__":
     df_test = pd.read_csv(test_file)
     print(f" -> Datos de Test cargados: {len(df_test)} filas.")
 
-    # ==============================================
-    # 1. EVALUAR KNN
-    # ==============================================
-    evaluar_modelo("K-Nearest Neighbors (KNN)", "mejor_modelo.pkl", df_test, target_col)
+    # Preparamos un DataFrame para guardar las predicciones
+    # Incluimos la columna Real (target) como primera columna
+    df_predicciones = pd.DataFrame()
 
-    # ==============================================
-    # 2. EVALUAR DECISION TREES
-    # ==============================================
-    # evaluar_modelo("Decision Trees", "mejor_modelo_dt.pkl", df_test, target_col)
+    if target_col in df_test.columns:
+        df_predicciones[f"Real_{target_col}"] = df_test[target_col]
+    else:
+        df_predicciones[f"Real_{target_col}"] = df_test.iloc[:, -1]
 
-    # ==============================================
-    # 3. EVALUAR RANDOM FOREST
-    # ==============================================
-    # evaluar_modelo("Random Forest", "mejor_modelo_rf.pkl", df_test, target_col)
+    # Buscar todos los archivos .pkl en el directorio actual
+    modelos_pkl = ["mejor_Decision Trees.pkl","mejor_KNN.pkl", "mejor_modelo.pkl", "mejor_Naïve Bayes.pkl", "mejor_Random Forest.pkl"]
 
-    # ==============================================
-    # 4. EVALUAR LOGISTIC REGRESSION
-    # ==============================================
-    # evaluar_modelo("Logistic Regression", "mejor_modelo_lr.pkl", df_test, target_col)
+    if not modelos_pkl:
+        print("\n [!] No se han encontrado archivos de modelos (.pkl) en el directorio.")
+        sys.exit(0)
+    print(f"\n -> Se han encontrado {len(modelos_pkl)} modelos para evaluar.")
 
-    # ==============================================
-    # 5. EVALUAR NAÏVE BAYES
-    # ==============================================
-    # evaluar_modelo("Naïve Bayes", "mejor_modelo_nb.pkl", df_test, target_col)
+    # Iterar sobre cada modelo encontrado y evaluarlo
+    for archivo_modelo in modelos_pkl:
+        y_pred = evaluar_modelo(archivo_modelo, df_test, target_col)
+
+        # Si la evaluación fue exitosa, guardamos las predicciones
+        if y_pred is not None:
+            nombre_columna = os.path.basename(archivo_modelo).replace(".pkl", "")
+            df_predicciones[f"Pred_{nombre_columna}"] = y_pred
+
+    # Guardar todas las predicciones en un archivo CSV
+    df_predicciones.to_csv(archivo_predicciones, index=False)
+    print(f"\n==========================================================")
+    print(f" [✓] Todas las predicciones se han guardado en: {archivo_predicciones}")
+    print(f"==========================================================")

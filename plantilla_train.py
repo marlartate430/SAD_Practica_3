@@ -21,15 +21,14 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB, MultinomialNB, CategoricalNB
 from tqdm import tqdm
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from imblearn.over_sampling import SMOTE
 import time
 import random
-
 
 # POR CAMBIAR
 CV_POR_DEFECTO = 5
 CPU_POR_DEFECTO = -1
-STIMATOR_POR_DEFECTO = None
-
+STIMATOR_POR_DEFECTO = "f1_macro"
 
 nltk.download('stopwords', quiet=True)
 
@@ -437,8 +436,8 @@ def balancear_datos(df_train, df_test, config):
 
     try:
         if estrategia == "oversample":
-            # Le pasamos el ratio al inicializar la herramienta
-            ros = RandomOverSampler(sampling_strategy=ratio, random_state=seed)
+            # SMOTE crea ejemplos nuevos, evitando el sobreajuste
+            ros = SMOTE(sampling_strategy=ratio, random_state=seed)
             X_res, y_res = ros.fit_resample(X_train, y_train)
         elif estrategia == "undersample":
             rus = RandomUnderSampler(sampling_strategy=ratio, random_state=seed)
@@ -559,7 +558,7 @@ def kNN_sweep(train_data, target_col, knn_config):
     return best_params, best_model, best_score
 
 
-# ==========================================
+## ==========================================
 # ENTRENAMIENTO DECISION TREE
 # ==========================================
 def dt_sweep(df_pro, target_col, config):
@@ -595,18 +594,25 @@ def dt_sweep(df_pro, target_col, config):
     claves_parametros_decision_tree = [clave for clave in claves if clave != "regression"]
     # Deberia ainadir en el json, que elementos no se deben incluit en el grid_searchCV?
 
-    for indice, profundidad in enumerate(config.get("max_depth", [])):
-        diccionario_actual = {}
-        for clave in claves_parametros_decision_tree:
-            if clave == "min_samples_split" or clave == "min_samples_leaf":
-                step = 1
-                if len(config[clave]) > 2:
-                    step = config[clave][2]
-                diccionario_actual[clave] = range(config[clave][0], config[clave][1] + 1, step)
-            else:
-                diccionario_actual[clave] = [config[clave][indice]]
+    # CORRECCIÓN: Para evitar el IndexError y hacer la combinación cruzada completa de forma segura
+    for profundidad in config.get("max_depth", []):
+        for criterio in config.get("criterion", ["gini"]):
+            for splitter in config.get("splitter", ["best"]):
+                diccionario_actual = {
+                    "max_depth": [profundidad],
+                    "criterion": [criterio],
+                    "splitter": [splitter]
+                }
 
-        parametros_decision_tree.append(diccionario_actual)
+                # Manejamos los rangos de samples
+                for clave in ["min_samples_split", "min_samples_leaf"]:
+                    if clave in config:
+                        step = 1
+                        if len(config[clave]) > 2:
+                            step = config[clave][2]
+                        diccionario_actual[clave] = range(config[clave][0], config[clave][1] + 1, step)
+
+                parametros_decision_tree.append(diccionario_actual)
 
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
@@ -624,11 +630,10 @@ def dt_sweep(df_pro, target_col, config):
         end_time = time.time()
 
         for i in range(100):
-            time.sleep(random.uniform(0.06, 0.15))  # Esperamos un tiempo aleatorio
-            pbar.update(random.random() * 2)  # Actualizamos la barra con un valor aleatorio
-        pbar.n = 100
-        pbar.last_print_n = 100
-        pbar.update(0)
+            time.sleep(random.uniform(0.01, 0.05))  # Esperamos un tiempo aleatorio (reducido para no tardar tanto)
+            pbar.update(1)  # Actualizamos la barra de 1 en 1 para evitar pasarnos del 100% y quitar el warning
+
+    print() # Añadimos un salto de línea en blanco para evitar el solapamiento visual
 
     execution_time = end_time - start_time
     print("Tiempo de ejecución:" + Fore.MAGENTA, execution_time, Fore.RESET + "segundos")
@@ -637,6 +642,7 @@ def dt_sweep(df_pro, target_col, config):
     best_model = gs.best_estimator_
     best_score = gs.best_score_
 
+    print(f" -> ¡Barrido completado! Mejores hiperparámetros encontrados: {best_params} (Score: {best_score:.4f})")
 
     # Mostramos los resultados
     # mostrar_resultados(gs, x_dev, y_dev)
@@ -680,24 +686,33 @@ def rf_sweep(df_pro, target_col, config):
     parametros_random_forest = []
     claves = config.keys()
     claves_parametros_random_forest = [clave for clave in claves if clave != "regression"]
-    # Deberia ainadir en el json, que elementos no se deben incluit en el grid_searchCV?
+    # Deberia aniadir en el json, que elementos no se deben incluit en el grid_searchCV?
 
-    for indice, profundidad in enumerate(config.get("max_depth", [])):
-        diccionario_actual = {}
-        for clave in claves_parametros_random_forest:
-            if clave == "min_samples_split" or clave == "min_samples_leaf":
-                step = 1
-                if len(config[clave]) > 2:
-                    step = config[clave][2]
-                diccionario_actual[clave] = range(config[clave][0], config[clave][1] + 1, step)
-            else:
-                diccionario_actual[clave] = [config[clave][indice]]
+    # CORRECCIÓN: Evitar el IndexError y construir la grid correctamente.
+    for profundidad in config.get("max_depth", []):
+        for n_est in config.get("n_estimators", [100]):  # Nota: corregido n_estimators aquí también
+            for criterio in config.get("criterion", ["gini"]):
+                for max_feat in config.get("max_features", ["sqrt"]):
+                    diccionario_actual = {
+                        "max_depth": [profundidad],
+                        "n_estimators": [n_est],
+                        "criterion": [criterio],
+                        "max_features": [max_feat]
+                    }
 
-        claves_parametros_random_forest.append(diccionario_actual)
+                    # Manejo de los rangos para las hojas/divisiones
+                    for clave in ["min_samples_split", "min_samples_leaf"]:
+                        if clave in config:
+                            step = 1
+                            if len(config[clave]) > 2:
+                                step = config[clave][2]
+                            diccionario_actual[clave] = range(config[clave][0], config[clave][1] + 1, step)
+
+                    # CORRECCIÓN DEL BUG: append a parametros, NO a claves
+                    parametros_random_forest.append(diccionario_actual)
 
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando random forest', unit='iter', leave=True) as pbar:
-        #TODO Llamar al decision trees
         gs = GridSearchCV(
             tipo_de_random_forest(),
             parametros_random_forest,
@@ -711,18 +726,19 @@ def rf_sweep(df_pro, target_col, config):
         end_time = time.time()
 
         for i in range(100):
-            time.sleep(random.uniform(0.06, 0.15))  # Esperamos un tiempo aleatorio
-            pbar.update(random.random() * 2)  # Actualizamos la barra con un valor aleatorio
-        pbar.n = 100
-        pbar.last_print_n = 100
-        pbar.update(0)
+            time.sleep(random.uniform(0.01, 0.05))  # Esperamos un tiempo aleatorio (reducido para no tardar tanto)
+            pbar.update(1)  # Actualizamos la barra de 1 en 1 para evitar pasarnos del 100% y quitar el warning
+
+    print() # Añadimos un salto de línea en blanco para evitar el solapamiento visual
 
     execution_time = end_time - start_time
-    print("Tiempo de ejecución:"+Fore.MAGENTA, execution_time,Fore.RESET+ "segundos")
+    print("Tiempo de ejecución:" + Fore.MAGENTA, execution_time, Fore.RESET + "segundos")
 
     best_params = gs.best_params_
     best_model = gs.best_estimator_
     best_score = gs.best_score_
+
+    print(f" -> ¡Barrido completado! Mejores hiperparámetros encontrados: {best_params} (Score: {best_score:.4f})")
 
     # Mostramos los resultados
     # mostrar_resultados(gs, x_dev, y_dev)
@@ -815,25 +831,22 @@ def evaluar_y_seleccionar_mejor_modelo(modelos_entrenados):
     mejor_score_global = modelos_entrenados[mejor_algoritmo]["score"]
     mejores_params_globales = modelos_entrenados[mejor_algoritmo]["params"]
 
-    print(" -> Evaluando contendientes (basado en Cross-Validation de entrenamiento)...")
-    for algo, datos in modelos_entrenados.items():
-        print(f"    - {algo}: Score {datos['score']:.4f}")
+    print(" -> Evaluando contendientes...")
+    for modelo, datos in modelos_entrenados.items():
+        print(f"    - {modelo}: Score {datos['score']:.4f}")
+        joblib.dump(datos["modelo"], "mejor_" + modelo + ".pkl")
 
     print(f"\n[🏆] EL GANADOR ABSOLUTO ES: {mejor_algoritmo}")
     print(f"     -> Puntuación (F1 Macro CV): {mejor_score_global:.4f}")
     print(f"     -> Parámetros Óptimos: {mejores_params_globales}")
 
-    # Exportamos solo el mejor modelo
     nombre_archivo = 'mejor_modelo.pkl'
     joblib.dump(mejor_modelo_global, nombre_archivo)
-    print(f"\n[+] El modelo campeón ha sido exportado exitosamente a: {nombre_archivo}")
 
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)  # interrupcion CTR + C
 
-    # 1. EJECUCIÓN DEL PIPELINE DE PREPROCESADO
-    # Ahora devuelve también los DataFrames sin escalar
     df_train_unscaled, df_test_unscaled, df_train_proc, df_test_proc, config_completo = pipeline_preprocesamiento(
         'config.json')
 
@@ -873,10 +886,9 @@ if __name__ == "__main__":
     # ==============================================
     if "decision_trees" in algoritmos_elegidos:
         print("\n--- 2. ENTRENANDO DECISION TREES ---")
-        # TODO: Añadir lógica y GridSearch para Decision Trees.
         # Recuerda: Este modelo no necesita datos escalados.
         dt_config = config_completo.get("decision_trees", {})
-        best_params_dt, best_model_dt, best_score_dt = dt_sweep(df_train_proc, target_col, dt_config)
+        best_params_dt, best_model_dt, best_score_dt = dt_sweep(df_train_unscaled, target_col, dt_config)
         modelos_entrenados["Decision Trees"] = {
             "modelo": best_model_dt,
             "score": best_score_dt,
@@ -888,12 +900,11 @@ if __name__ == "__main__":
     # ==============================================
     if "random_forest" in algoritmos_elegidos:
         print("\n--- 3. ENTRENANDO RANDOM FOREST ---")
-        # TODO: Añadir lógica y GridSearch para Random Forest.
         # Recuerda: Al igual que los árboles de decisión, es insensible al escalado.
         rf_config = config_completo.get("random_forest", {})
-        best_params_rf, best_model_rf, best_score_rf = rf_sweep(df_train_proc, target_col, rf_config)
+        best_params_rf, best_model_rf, best_score_rf = rf_sweep(df_train_unscaled, target_col, rf_config)
         modelos_entrenados["Random Forest"] = {
-             "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
+            "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
         }
 
     # ==============================================
@@ -901,7 +912,6 @@ if __name__ == "__main__":
     # ==============================================
     if "logistic_regression" in algoritmos_elegidos:
         print("\n--- 4. ENTRENANDO LOGISTIC REGRESSION ---")
-        # TODO: Añadir lógica y GridSearch para Logistic Regression.
         # Recuerda: Modelo sensible a la escala (como el KNN), el uso de df_train_proc escalado es ideal.
         # best_params_lr, best_model_lr, best_score_lr = lr_sweep(...)
         # modelos_entrenados["Logistic Regression"] = {
@@ -913,8 +923,6 @@ if __name__ == "__main__":
     # ==============================================
     if "naive_bayes" in algoritmos_elegidos:
         print("\n--- 5. ENTRENANDO NAÏVE BAYES ---")
-        # TODO: Añadir lógica para Naïve Bayes.
-        # Recuerda: Usualmente se prueba con GaussianNB, MultinomialNB (si los datos no son negativos), etc.
         nb_config = config_completo.get("naive_bayes", {})
         # Usamos df_train_unscaled porque Naïve Bayes NO requiere escalado
         best_params_nb, best_model_nb, best_score_nb = nb_sweep(df_train_unscaled, target_col, nb_config)
@@ -930,5 +938,3 @@ if __name__ == "__main__":
     # ==============================================
     # Pasamos TODOS los modelos entrenados a la función final para que los evalúe y elija
     evaluar_y_seleccionar_mejor_modelo(modelos_entrenados)
-
-    print("\n[!] Fin del pipeline.")
