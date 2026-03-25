@@ -599,13 +599,14 @@ def dt_sweep(df_pro, target_col, config):
         diccionario_actual = {}
         for clave in claves_parametros_decision_tree:
             if clave == "min_samples_split" or clave == "min_samples_leaf":
-                diccionario_actual[clave] = range(1, config[clave] + 1)
+                step = 1
+                if len(config[clave]) > 2:
+                    step = config[clave][2]
+                diccionario_actual[clave] = range(config[clave][0], config[clave][1] + 1, step)
             else:
                 diccionario_actual[clave] = [config[clave][indice]]
 
         parametros_decision_tree.append(diccionario_actual)
-
-    # El enunciado dice que hay que usar 1 y 2, pero sklearn da advertencias
 
     # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
@@ -685,7 +686,10 @@ def rf_sweep(df_pro, target_col, config):
         diccionario_actual = {}
         for clave in claves_parametros_random_forest:
             if clave == "min_samples_split" or clave == "min_samples_leaf":
-                diccionario_actual[clave] = range(1, config[clave] + 1)
+                step = 1
+                if len(config[clave]) > 2:
+                    step = config[clave][2]
+                diccionario_actual[clave] = range(config[clave][0], config[clave][1] + 1, step)
             else:
                 diccionario_actual[clave] = [config[clave][indice]]
 
