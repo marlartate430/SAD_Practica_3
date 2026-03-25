@@ -83,5 +83,11 @@
         "min_samples_split": 2,
         "min_samples_leaf": 2,
         "max_features" : ["sqrt"]
+    },
+
+    "logistic_regression" : {
+        "max_iter" : 100,
+        "learning_rate": "x",
+        "tol": 1e-4
     }
 }
