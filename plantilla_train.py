@@ -847,8 +847,7 @@ def evaluar_y_seleccionar_mejor_modelo(modelos_entrenados):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)  # interrupcion CTR + C
 
-    df_train_unscaled, df_test_unscaled, df_train_proc, df_test_proc, config_completo = pipeline_preprocesamiento(
-        'config.json')
+    df_train_unscaled, df_test_unscaled, df_train_proc, df_test_proc, config_completo = pipeline_preprocesamiento(sys.argv[1])
 
     target_col = config_completo["preproceso"]["target"]
 

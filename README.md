@@ -8,3 +8,7 @@ sys.version
 ```
 pip install -r requirements.txt
 ```
+## Llamada 
+```
+./plantilla_train.py config.json
+```
