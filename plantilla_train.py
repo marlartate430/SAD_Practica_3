@@ -28,7 +28,6 @@ import random
 # POR CAMBIAR
 CV_POR_DEFECTO = 5
 CPU_POR_DEFECTO = -1
-STIMATOR_POR_DEFECTO = "f1_macro"
 
 nltk.download('stopwords', quiet=True)
 
@@ -512,8 +511,7 @@ def pipeline_preprocesamiento(json_path):
 # ==========================================
 # ENTRENAMIENTO KNN
 # ==========================================
-def kNN_sweep(train_data, target_col, knn_config):
-    # 1. Separar características (X) y objetivo (y) SOLAMENTE para TRAIN
+def kNN_sweep(train_data, target_col, knn_config, scoring):
     if target_col in train_data.columns:
         X_train = train_data.drop(columns=[target_col]).values
         y_train = train_data[target_col].values
@@ -523,13 +521,12 @@ def kNN_sweep(train_data, target_col, knn_config):
 
     print(f" -> Datos cargados para KNN: {len(X_train)} filas en Train.")
 
-    # 3. Configuramos los parámetros a explorar desde el JSON
+    # Configuramos los parámetros a explorar desde el JSON
     param_grid = {
         'n_neighbors': knn_config.get("n_neighbors", [3, 5, 7, 9, 11]),
         'weights': knn_config.get("weights", ["uniform", "distance"]),
         'p': knn_config.get("p", [1, 2])
     }
-    scoring = knn_config.get("scoring", "f1_macro")
 
     use_k_fold = knn_config.get("use_k_fold", True)  # Por defecto hacemos K-Folds
 
@@ -558,10 +555,10 @@ def kNN_sweep(train_data, target_col, knn_config):
     return best_params, best_model, best_score
 
 
-## ==========================================
+# ==========================================
 # ENTRENAMIENTO DECISION TREE
 # ==========================================
-def dt_sweep(df_pro, target_col, config):
+def dt_sweep(df_pro, target_col, config, scoring):
     """
     Función para implementar el algoritmo de árbol de decisión.
 
@@ -594,7 +591,6 @@ def dt_sweep(df_pro, target_col, config):
     claves_parametros_decision_tree = [clave for clave in claves if clave != "regression"]
     # Deberia ainadir en el json, que elementos no se deben incluit en el grid_searchCV?
 
-    # CORRECCIÓN: Para evitar el IndexError y hacer la combinación cruzada completa de forma segura
     for profundidad in config.get("max_depth", []):
         for criterio in config.get("criterion", ["gini"]):
             for splitter in config.get("splitter", ["best"]):
@@ -614,15 +610,13 @@ def dt_sweep(df_pro, target_col, config):
 
                 parametros_decision_tree.append(diccionario_actual)
 
-    # Hacemos un barrido de hiperparametros
     with tqdm(total=100, desc='Procesando decision tree', unit='iter', leave=True) as pbar:
-        # TODO Llamar al decision trees
         gs = GridSearchCV(
             tipo_de_decision_tree(),
             parametros_decision_tree,
             cv=CV_POR_DEFECTO,
             n_jobs=CPU_POR_DEFECTO,
-            scoring=STIMATOR_POR_DEFECTO
+            scoring=scoring
         )
 
         start_time = time.time()
@@ -653,7 +647,7 @@ def dt_sweep(df_pro, target_col, config):
     return best_params, best_model, best_score
 
 
-def rf_sweep(df_pro, target_col, config):
+def rf_sweep(df_pro, target_col, config, scoring):
     """
     Función que entrena un modelo de Random Forest utilizando GridSearchCV para encontrar los mejores hiperparámetros.
     Divide los datos en entrenamiento y desarrollo, realiza la búsqueda de hiperparámetros, guarda el modelo entrenado
@@ -718,7 +712,7 @@ def rf_sweep(df_pro, target_col, config):
             parametros_random_forest,
             n_jobs=CPU_POR_DEFECTO,
             cv=CV_POR_DEFECTO,
-            scoring=STIMATOR_POR_DEFECTO
+            scoring=scoring
         )
 
         start_time = time.time()
@@ -751,7 +745,7 @@ def rf_sweep(df_pro, target_col, config):
 # ==========================================
 # ENTRENAMIENTO NAÏVE BAYES
 # ==========================================
-def nb_sweep(train_data, target_col, nb_config):
+def nb_sweep(train_data, target_col, nb_config, scoring):
     # 1. Separar características (X) y objetivo (y) SOLAMENTE para TRAIN
     if target_col in train_data.columns:
         X_train = train_data.drop(columns=[target_col]).values
@@ -783,7 +777,6 @@ def nb_sweep(train_data, target_col, nb_config):
             'var_smoothing': nb_config.get("var_smoothing", [1e-9, 1e-8, 1e-7, 1e-6, 1e-5])
         }
 
-    scoring = nb_config.get("scoring", "f1_macro")
     use_k_fold = nb_config.get("use_k_fold", True)
 
     if use_k_fold:
@@ -851,6 +844,8 @@ if __name__ == "__main__":
 
     target_col = config_completo["preproceso"]["target"]
 
+    scoring = config_completo.get("scoring", "f1_macro")
+
     # Extraemos la lista de algoritmos a usar (por defecto si no la encuentra hace KNN y Naive Bayes)
     algoritmos_elegidos = config_completo.get("algoritmos_a_usar", ["knn", "naive_bayes"])
 
@@ -872,7 +867,7 @@ if __name__ == "__main__":
         print("\n--- 1. ENTRENANDO KNN ---")
         knn_config = config_completo.get("knn", {})
         # KNN usa los datos ESCALADOS (df_train_proc)
-        best_params_knn, best_model_knn, best_score_knn = kNN_sweep(df_train_proc, target_col, knn_config)
+        best_params_knn, best_model_knn, best_score_knn = kNN_sweep(df_train_proc, target_col, knn_config, scoring)
 
         modelos_entrenados["KNN"] = {
             "modelo": best_model_knn,
@@ -887,7 +882,7 @@ if __name__ == "__main__":
         print("\n--- 2. ENTRENANDO DECISION TREES ---")
         # Recuerda: Este modelo no necesita datos escalados.
         dt_config = config_completo.get("decision_trees", {})
-        best_params_dt, best_model_dt, best_score_dt = dt_sweep(df_train_unscaled, target_col, dt_config)
+        best_params_dt, best_model_dt, best_score_dt = dt_sweep(df_train_unscaled, target_col, dt_config, scoring)
         modelos_entrenados["Decision Trees"] = {
             "modelo": best_model_dt,
             "score": best_score_dt,
@@ -901,7 +896,7 @@ if __name__ == "__main__":
         print("\n--- 3. ENTRENANDO RANDOM FOREST ---")
         # Recuerda: Al igual que los árboles de decisión, es insensible al escalado.
         rf_config = config_completo.get("random_forest", {})
-        best_params_rf, best_model_rf, best_score_rf = rf_sweep(df_train_unscaled, target_col, rf_config)
+        best_params_rf, best_model_rf, best_score_rf = rf_sweep(df_train_unscaled, target_col, rf_config, scoring)
         modelos_entrenados["Random Forest"] = {
             "modelo": best_model_rf, "score": best_score_rf, "params": best_params_rf
         }
@@ -924,7 +919,7 @@ if __name__ == "__main__":
         print("\n--- 5. ENTRENANDO NAÏVE BAYES ---")
         nb_config = config_completo.get("naive_bayes", {})
         # Usamos df_train_unscaled porque Naïve Bayes NO requiere escalado
-        best_params_nb, best_model_nb, best_score_nb = nb_sweep(df_train_unscaled, target_col, nb_config)
+        best_params_nb, best_model_nb, best_score_nb = nb_sweep(df_train_unscaled, target_col, nb_config, scoring)
 
         modelos_entrenados["Naïve Bayes"] = {
             "modelo": best_model_nb,

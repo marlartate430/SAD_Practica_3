@@ -4,6 +4,24 @@
     // "knn", "decision_trees", "random_forest", "logistic_regression", "naive_bayes"
     "algoritmos_a_usar": ["knn", "decision_trees", "random_forest", "logistic_regression", "naive_bayes"],
 
+    // "scoring": el valor que se va a usar para obtener el mejor modelo
+    // opciones:
+    //
+    // --- PARA CLASIFICACIÓN ---
+    // "accuracy"              : Porcentaje total de aciertos (clases balanceadas).
+    // "balanced_accuracy"     : Promedio de acierto por clase (clases desbalanceadas).
+    // "f1", "f1_micro", "f1_macro", "f1_weighted" : Equilibrio entre precisión y recall ("macro" da igual peso a cada clase, "micro" a cada fila).
+    // "precision", "precision_micro", "precision_macro", "precision_weighted" : Minimiza falsos positivos.
+    // "recall", "recall_micro", "recall_macro", "recall_weighted"             : Minimiza falsos negativos.
+    // "roc_auc", "roc_auc_ovr", "roc_auc_ovo"                                 : Área bajo la curva ROC.
+    //
+    // --- PARA REGRESIÓN ---
+    // "r2"                          : Coeficiente de determinación (varianza explicada, ideal cerca de 1).
+    // "neg_mean_squared_error"      : Error cuadrático medio negativo (penaliza fuertemente los errores grandes).
+    // "neg_root_mean_squared_error" : Raíz del error cuadrático medio negativo (mismas unidades que el target).
+    // "neg_mean_absolute_error"     : Error absoluto medio negativo (más fácil de interpretar, menos sensible a outliers).
+    // "neg_median_absolute_error"   : Error absoluto mediano negativo (el más robusto frente a valores extremos).
+
     // "train": Ruta del archivo CSV que contiene los datos de train.
     "train": "penguins_train.csv",
 
@@ -136,9 +154,6 @@
         // "test_size": % de datos para validación si no usas K-Fold.
         "test_size": 0.2,
 
-        // "scoring": Métrica para elegir al ganador (Ej: "f1_macro", "accuracy").
-        "scoring": "f1_macro",
-
         // "use_k_fold": true para usar K-Folds
         "use_k_fold": true,
 
@@ -162,9 +177,6 @@
 
         // "test_size": % de datos para validación si no usas K-Fold.
         "test_size": 0.2,
-
-        // "scoring": Métrica para elegir al ganador (Ej: "f1_macro", "accuracy").
-        "scoring": "f1_macro",
 
         // "use_k_fold": true para usar K-Folds
         "use_k_fold": true,

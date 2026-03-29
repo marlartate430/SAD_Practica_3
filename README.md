@@ -11,9 +11,9 @@ pip install -r requirements.txt
 ## Llamadas: 
 Primero el train:
 ```
-./plantilla_train.py config.json
+python ./plantilla_train.py config.json
 ```
 En el train se generan los archivos preparados siempre con el mismo nombre por lo que en el test no hace falta ponerlos:
 ```
-./plantilla_test.py
+python ./plantilla_test.py
 ```
