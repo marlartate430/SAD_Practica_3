@@ -6,7 +6,7 @@
         "random_forest",
         "logistic_regression"
     ],
-sc    "scoring": "f1_macro",
+    "scoring": "f1_macro",
     "train": "penguins_train.csv",
     "test": "penguins_test.csv",
     "preproceso": {
